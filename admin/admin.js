@@ -1,11 +1,22 @@
 const express = require('express');
-const connectDB = require('../db/conn.js');
+require('dotenv').config();
+const connectDB = require('../db/conn');
+const morgan = require('morgan'); // ✅ logger
+const path = require('path');
+
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 const app = express();
+app.use(express.json());
+
+app.use(morgan(':method :url :status - :response-time ms'));
 
 connectDB();
 
-const PORT = process.env.PORT || 5000;
+const routes = require('./routes/indexRoute');
+app.use('/', routes);
+
+const PORT = process.env.ADMIN_PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`🚀 Admin server running on port ${PORT}`);
 });
