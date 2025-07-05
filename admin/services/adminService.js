@@ -131,7 +131,7 @@ exports.adminForgetPassword = async (req) => {
 
 exports.adminChangeImage = async (req) => {
   try {
-    const { adminId } = req.body;
+    const adminId = req.adminId;
     const file = req.file;
 
     if (!adminId || !file) {
@@ -164,7 +164,7 @@ exports.adminChangeImage = async (req) => {
 
 exports.adminLogout = async (req) => {
   try {
-    const { adminId } = req.body;
+    const adminId = req.adminId;
 
     const admin = await ADMIN.findById(adminId);
     if (!admin) {
@@ -174,7 +174,7 @@ exports.adminLogout = async (req) => {
     admin.token = null;
     await admin.save();
 
-    return { status: true, message: 'Logout successful' };
+    return { status: true, message: 'Logout successful.' };
   } catch (error) {
     console.error('Service Error - adminLogout:', error);
     return {

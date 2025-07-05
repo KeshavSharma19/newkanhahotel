@@ -4,9 +4,8 @@ const connectDB = require('../db/conn');
 const morgan = require('morgan'); // ✅ logger
 const path = require('path');
 
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
-
 const app = express();
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use(express.json());
 
 app.use(morgan(':method :url :status - :response-time ms'));

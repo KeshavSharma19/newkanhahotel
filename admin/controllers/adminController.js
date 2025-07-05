@@ -32,10 +32,7 @@ exports.adminForgetPassword = async (req, res) => {
 
 exports.adminChangeImage = async (req, res) => {
   try {
-    const result = await adminService.adminChangeImage({
-      body: { adminId: req.body.adminId },
-      file: req.file
-    });
+    const result = await adminService.adminChangeImage(req);
     res.status(result.status ? 200 : 400).json(result);
   } catch (error) {
     console.error('Change Image Error:', error);
