@@ -2,11 +2,10 @@ const express = require('express');
 require('dotenv').config();
 const connectDB = require('../db/conn');
 const morgan = require('morgan'); // ✅ logger
-const path = require('path');
 
 const app = express();
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
 app.use(express.json());
+app.use(express.static('public'));
 
 app.use(morgan(':method :url :status - :response-time ms'));
 

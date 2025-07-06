@@ -133,6 +133,7 @@ exports.adminChangeImage = async (req) => {
   try {
     const adminId = req.adminId;
     const file = req.file;
+    const type = req.query.type || 'admin';
 
     if (!adminId || !file) {
       return { status: false, message: 'Admin ID and image file are required' };
@@ -142,9 +143,11 @@ exports.adminChangeImage = async (req) => {
     if (!admin) {
       return { status: false, message: 'Admin not found' };
     }
-
-    const imagePath = `/images/${file.filename}`; 
+    
+    // Construct dynamic image path
+    const imagePath = `/images/${type}/${file.filename}`;
     admin.profileImage = imagePath;
+
     await admin.save();
 
     return {
@@ -152,6 +155,7 @@ exports.adminChangeImage = async (req) => {
       message: 'Profile image updated',
       data: { image: imagePath }
     };
+
   } catch (error) {
     console.error('Service Error - adminChangeImage:', error);
     return {

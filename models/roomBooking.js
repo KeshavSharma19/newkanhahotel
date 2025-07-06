@@ -6,11 +6,6 @@ const roomBookingSchema = new mongoose.Schema({
     ref: 'Room',
     required: true
   },
-  hotelId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Hotel',
-    required: true
-  },
   guestName: {
     type: String,
     required: true
