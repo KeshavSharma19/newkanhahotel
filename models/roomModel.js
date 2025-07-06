@@ -1,39 +1,23 @@
 const mongoose = require('mongoose');
 
 const roomSchema = new mongoose.Schema({
-  title: {
-    type: String,
+  roomTypeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'RoomType',
     required: true
   },
-  type: {
+  roomNumber: {
     type: String,
-    required: true // e.g., Deluxe, Super Deluxe
-  },
-  price: {
-    type: Number,
-    required: true // base price (without breakfast)
-  },
-  withBreakfastPrice: {
-    type: Number // optional: price if guest chooses breakfast
-  },
-  capacity: {
-    type: Number,
-    default: 2
-  },
-  amenities: {
-    type: [String],
-    default: []
-  },
-  images: {
-    type: [String],
-    default: []
-  },
-  description: {
-    type: String
+    required: true,
+    unique: true
   },
   isAvailable: {
     type: Boolean,
     default: true
+  },
+  disabledReason: {
+    type: String,
+    default: ''
   }
 }, {
   timestamps: true,

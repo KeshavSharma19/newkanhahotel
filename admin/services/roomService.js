@@ -1,7 +1,7 @@
-const Room = require('../../models/roomModel');
-const mongoose = require('mongoose');
+const ROOMTYPE = require('../../models/roomTypeModel');
+const ROOM = require('../../models/roomModel');
 
-exports.createRoom = async (req) => {
+exports.createRoomType = async (req) => {
   try {
     const {
       title,
@@ -12,6 +12,18 @@ exports.createRoom = async (req) => {
       description,
       withBreakfastPrice
     } = req.body;
+
+    const existingRoomType = await ROOMTYPE.findOne({
+      title: { $regex: new RegExp(`^${title}$`, 'i') },
+      type: { $regex: new RegExp(`^${type}$`, 'i') }
+    });
+
+    if( existingRoomType ) {
+      return {
+        status: false,
+        message: 'Room type already exists!'
+      }
+    }
 
     const files = req.files || [];
     const typeDir = req.query.type || 'rooms';
@@ -25,7 +37,7 @@ exports.createRoom = async (req) => {
       };
     }
 
-    await Room.create({
+    await ROOMTYPE.create({
       title,
       type,
       price,
@@ -41,7 +53,7 @@ exports.createRoom = async (req) => {
       message: 'Room created successfully'
     };
   } catch (error) {
-    console.error('Service Error - createRoom:', error);
+    console.error('Service Error - createRoomType:', error);
     return {
       status: false,
       message: 'Failed to create room'
@@ -50,16 +62,16 @@ exports.createRoom = async (req) => {
 };
 
 
-exports.getAllRooms = async () => {
+exports.getAllRoomTypes = async () => {
   try {
-    const rooms = await Room.find({}, { createdAt: 0, updatedAt: 0 });
+    const rooms = await ROOMTYPE.find({}, { createdAt: 0, updatedAt: 0 });
     return {
       status: true,
       message: 'Rooms fetched successfully',
       data: rooms
     };
   } catch (error) {
-    console.error('Service Error - getAllRooms:', error);
+    console.error('Service Error - getAllRoomTypes:', error);
     return {
       status: false,
       message: 'Failed to fetch rooms'
@@ -68,10 +80,10 @@ exports.getAllRooms = async () => {
 };
 
 
-exports.getRoomById = async (req) => {
+exports.getRoomTypeById = async (req) => {
   try {
     const roomId = req.params.roomId;
-    const room = await Room.findById(roomId);
+    const room = await ROOMTYPE.findById(roomId, {createdAt: 0, updatedAt: 0});
     if (!room) {
       return {
         status: false,
@@ -89,7 +101,7 @@ exports.getRoomById = async (req) => {
       data: roomData
     };
   } catch (error) {
-    console.error('Service Error - getRoomById:', error);
+    console.error('Service Error - getRoomTypeById:', error);
     return {
       status: false,
       message: 'Failed to fetch room'
@@ -98,7 +110,7 @@ exports.getRoomById = async (req) => {
 };
 
 
-exports.updateRoom = async (req) => {
+exports.updateRoomType = async (req) => {
   try {
     const roomId = req.params.roomId;
     const updates = req.body;
@@ -113,7 +125,7 @@ exports.updateRoom = async (req) => {
       updates.images = files.map(file => `/images/${typeDir}/${file.filename}`);
     }
 
-    const updatedRoom = await Room.findByIdAndUpdate(roomId, updates, {
+    const updatedRoom = await ROOMTYPE.findByIdAndUpdate(roomId, updates, {
       new: true
     });
 
@@ -130,7 +142,7 @@ exports.updateRoom = async (req) => {
       data: updatedRoom
     };
   } catch (error) {
-    console.error('Service Error - updateRoom:', error);
+    console.error('Service Error - updateRoomType:', error);
     return {
       status: false,
       message: 'Failed to update room'
@@ -139,10 +151,10 @@ exports.updateRoom = async (req) => {
 };
 
 
-exports.deleteRoom = async (req) => {
+exports.deleteRoomType = async (req) => {
   try {
     const roomId = req.params.roomId;
-    const deleted = await Room.findByIdAndDelete(roomId);
+    const deleted = await ROOMTYPE.findByIdAndDelete(roomId);
     if (!deleted) {
       return {
         status: false,
@@ -154,10 +166,120 @@ exports.deleteRoom = async (req) => {
       message: 'Room deleted successfully'
     };
   } catch (error) {
+    console.error('Service Error - deleteRoomType:', error);
+    return {
+      status: false,
+      message: 'Failed to delete room'
+    };
+  }
+};
+
+
+exports.addRoom = async (req) => {
+  try {
+    const { roomNumber } = req.body;
+    const { typeId } = req.params;
+
+    if (!roomNumber) {
+      return { status: false, message: 'Room number is required' };
+    }
+
+    const exists = await ROOM.findOne({ roomNumber });
+    if (exists) {
+      return { status: false, message: 'Room number already exists' };
+    }
+
+    const room = await ROOM.create({
+      roomTypeId: typeId,
+      roomNumber
+    });
+
+    return {
+      status: true,
+      message: 'Room added successfully',
+      data: room
+    };
+  } catch (error) {
+    console.error('Service Error - addRoom:', error);
+    return {
+      status: false,
+      message: 'Failed to add room'
+    };
+  }
+};
+
+
+exports.viewAllRooms = async (req) => {
+  try {
+    const { typeId } = req.params;
+
+    const rooms = await ROOM.find({ roomTypeId: typeId });
+
+    return {
+      status: true,
+      message: 'Rooms fetched successfully',
+      data: rooms
+    };
+  } catch (error) {
+    console.error('Service Error - viewAllRooms:', error);
+    return {
+      status: false,
+      message: 'Failed to fetch rooms'
+    };
+  }
+};
+
+
+exports.deleteRoom = async (req) => {
+  try {
+    const { roomId } = req.params;
+
+    const deleted = await ROOM.findByIdAndDelete(roomId);
+    if (!deleted) {
+      return { status: false, message: 'Room not found' };
+    }
+
+    return {
+      status: true,
+      message: 'Room deleted successfully'
+    };
+  } catch (error) {
     console.error('Service Error - deleteRoom:', error);
     return {
       status: false,
       message: 'Failed to delete room'
+    };
+  }
+};
+
+
+exports.toggleRoomAvailability = async (req) => {
+  try {
+    const { roomId } = req.params;
+    const { isAvailable, reason } = req.body;
+
+    const room = await ROOM.findById(roomId);
+    if (!room) {
+      return { status: false, message: 'Room not found' };
+    }
+
+    room.isAvailable = isAvailable;
+
+    // Store reason if disabling; clear reason if enabling
+    room.disabledReason = isAvailable ? '' : (reason || 'Disabled manually');
+
+    await room.save();
+
+    return {
+      status: true,
+      message: isAvailable ? 'Room enabled successfully' : 'Room disabled successfully',
+      data: room
+    };
+  } catch (error) {
+    console.error('Service Error - toggleRoomAvailability:', error);
+    return {
+      status: false,
+      message: 'Failed to update room availability'
     };
   }
 };
