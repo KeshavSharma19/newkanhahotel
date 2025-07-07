@@ -10,6 +10,10 @@ const roomBookingSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
   phone: {
     type: String,
     required: true
@@ -24,12 +28,7 @@ const roomBookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['booked', 'cancelled', 'completed'],
-    default: 'booked'
-  },
-  paymentStatus: {
-    type: String,
-    enum: ['paid', 'pending'],
+    enum: ['booked', 'cancelled', 'completed', 'pending'],
     default: 'pending'
   },
   totalAmount: {
