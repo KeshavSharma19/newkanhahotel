@@ -89,3 +89,23 @@ exports.toggleRoomAvailability = async (req, res) => {
     res.status(500).json({ status: false, message: 'Internal server error.' });
   }
 };
+
+exports.bookRoom = async (req, res) => {
+  try {
+    const result = await roomService.bookRoom(req);
+    res.status(result.status ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ status: false, message: 'Internal server error.' });
+  }
+};
+
+exports.updateBookingPayment = async (req, res) => {
+  try {
+    const result = await roomService.updateBookingPayment(req);
+    res.status(result.status ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ status: false, message: 'Internal server error.' });
+  }
+};
