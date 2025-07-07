@@ -1,7 +1,7 @@
 const Room = require('../models/Room');
 console.log("Room controller loaded");
 
-const getAllRooms = async (req, res) => {
+const getAllRoomTypes = async (req, res) => {
     try {
         const rooms = await Room.find();
         res.json(rooms);
@@ -11,7 +11,7 @@ const getAllRooms = async (req, res) => {
 };
 
 
-const createRoom = async (req, res) => {
+const createRoomType = async (req, res) => {
     try {
         // Check if a room with the same room number already exists
         const existingRoom = await Room.findOne({ roomNumber: req.body.roomNumber });
@@ -27,7 +27,7 @@ const createRoom = async (req, res) => {
 };
 
 
-const updateRoom = async (req, res) => {
+const updateRoomType = async (req, res) => {
     try {
         const room = await Room.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!room) return res.status(404).json({ error: 'Room not found' });
@@ -40,7 +40,7 @@ const updateRoom = async (req, res) => {
 
 
 
-const getRoomById = async (req, res) => {
+const getRoomTypeById = async (req, res) => {
     const { id } = req.params;
     try {
         const room = await Room.findById(id);
@@ -53,7 +53,7 @@ const getRoomById = async (req, res) => {
 };
 
 
-const deleteRoom = async (req, res) => {
+const deleteRoomType = async (req, res) => {
     try {
         const room = await Room.findByIdAndDelete(req.params.id);
         if (!room) return res.status(404).json({ error: 'Room not found' });
@@ -67,9 +67,9 @@ const deleteRoom = async (req, res) => {
 
 
 module.exports = {
-    getAllRooms,
-    getRoomById,
-    createRoom,
-    updateRoom,
-    deleteRoom
+    getAllRoomTypes,
+    getRoomTypeById,
+    createRoomType,
+    updateRoomType,
+    deleteRoomType
 };
