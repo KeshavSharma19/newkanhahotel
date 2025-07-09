@@ -3,6 +3,7 @@ const ROOM = require('../../models/roomModel');
 const ROOMBOOKING = require('../../models/roomBooking');
 const USER = require('../../models/userModel');
 const PAYMENT = require('../../models/paymentModel');
+const mongoose = require('mongoose');
 
 exports.createRoomType = async (req) => {
   try {
@@ -215,13 +216,39 @@ exports.addRoom = async (req) => {
 exports.viewAllRooms = async (req) => {
   try {
     const { typeId } = req.params;
+    const { page = 1, limit = 10, search = '' } = req.query;
 
-    const rooms = await ROOM.find({ roomTypeId: typeId });
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    const query = {
+      roomTypeId: typeId
+    };
+
+    if (search) {
+      query.roomNumber = { $regex: search, $options: 'i' };
+    }
+
+    const total = await ROOM.countDocuments(query);
+
+    const rooms = await ROOM.find(query)
+      .skip(skip)
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
 
     return {
       status: true,
       message: 'Rooms fetched successfully',
-      data: rooms
+      data: {
+        rooms,
+        pagination: {
+          total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum)
+        }
+      }
     };
   } catch (error) {
     console.error('Service Error - viewAllRooms:', error);
@@ -288,6 +315,105 @@ exports.toggleRoomAvailability = async (req) => {
 };
 
 
+exports.viewPastBookings = async (req) => {
+  try {
+    const { roomId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    if (!roomId) {
+      return { status: false, message: 'Room ID is required' };
+    }
+
+    const now = new Date();
+
+    const matchStage = {
+      $match: {
+        roomId: new mongoose.Types.ObjectId(roomId),
+        // checkOut: { $lt: now }
+      }
+    };
+
+    const lookupStage = {
+      $lookup: {
+        from: 'users',
+        localField: 'userId',
+        foreignField: '_id',
+        as: 'user'
+      }
+    };
+
+    const unwindStage = {
+      $unwind: {
+        path: '$user',
+        preserveNullAndEmptyArrays: true
+      }
+    };
+
+    const sortStage = {
+      $sort: { checkOut: -1 }
+    };
+
+    const projectStage = {
+      $project: {
+        roomId: 1,
+        guestName: 1,
+        phone: 1,
+        checkIn: 1,
+        checkOut: 1,
+        status: 1,
+        totalAmount: 1,
+        createdBy: 1,
+        paymentId: 1,
+        user: {
+          _id: 1,
+          name: 1,
+          email: 1,
+          phone: 1
+        }
+      }
+    };
+
+    const [results, totalCount] = await Promise.all([
+      ROOMBOOKING.aggregate([
+        matchStage,
+        lookupStage,
+        unwindStage,
+        sortStage,
+        { $skip: skip },
+        { $limit: limit },
+        projectStage
+      ]),
+      ROOMBOOKING.countDocuments({
+        roomId: new mongoose.Types.ObjectId(roomId),
+        checkOut: { $lt: now }
+      })
+    ]);
+
+    return {
+      status: true,
+      message: 'Past bookings fetched successfully',
+      data: {
+        bookings: results,
+        pagination: {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit)
+        }
+      }
+    };
+  } catch (error) {
+    console.error('Service Error - viewPastBookings (aggregate):', error);
+    return {
+      status: false,
+      message: 'Failed to fetch past bookings'
+    };
+  }
+};
+
+
 exports.bookRoom = async (req) => {
   try {
     const { roomId } = req.params;
@@ -348,6 +474,7 @@ exports.bookRoom = async (req) => {
       amount: totalAmount,
       mode: paymentMode,
       method: paymentMethod,
+      bookingType: 'room'
     });
 
     booking.paymentId = payment._id;
@@ -399,11 +526,11 @@ exports.updateBookingPayment = async (req) => {
 
     // Optional: Mark room as unavailable if payment is successful
     if (paymentStatus === 'paid') {
-      const room = await ROOM.findById(booking.roomId);
-      if (room) {
-        room.isAvailable = false;
-        await room.save();
-      }
+      // const room = await ROOM.findById(booking.roomId);
+      // if (room) {
+      //   room.isAvailable = false;
+      //   await room.save();
+      // }
       await ROOMBOOKING.findByIdAndUpdate(bookingId, { status: 'booked' });
     }
 
@@ -418,6 +545,44 @@ exports.updateBookingPayment = async (req) => {
     return {
       status: false,
       message: 'Failed to update payment status'
+    };
+  }
+};
+
+
+exports.cancelRoomBooking = async (req) => {
+  try {
+    const { bookingId } = req.params;
+
+    const booking = await ROOMBOOKING.findById(bookingId);
+    if (!booking) {
+      return { status: false, message: 'Booking not found' };
+    }
+
+    if (booking.status === 'cancelled') {
+      return { status: false, message: 'Booking is already cancelled' };
+    }
+
+    booking.status = 'cancelled';
+    await booking.save();
+
+    // const room = await ROOM.findById(booking.roomId);
+    // if (room) {
+    //   room.isAvailable = true;
+    //   await room.save();
+    // }
+
+    return {
+      status: true,
+      message: 'Booking cancelled successfully',
+      data: booking
+    };
+
+  } catch (error) {
+    console.error('Service Error - cancelRoomBooking:', error);
+    return {
+      status: false,
+      message: 'Something went wrong while cancelling the booking'
     };
   }
 };

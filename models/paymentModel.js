@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema({
+ bookingType: {
+    type: String,
+    enum: ['room', 'banquet', 'restaurant'],
+    required: true
+  },
   bookingId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'RoomBooking',
