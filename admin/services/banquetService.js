@@ -1,5 +1,8 @@
 const BANQUET = require('../../models/banquetModel');
 const mongoose = require('mongoose');
+const PAYMENT = require('../../models/paymentModel');
+const USER = require('../../models/userModel');
+const BANQUETBOOKING = require('../../models/banquetBooking');
 
 exports.addBanquet = async (req) => {
   try {
@@ -61,11 +64,11 @@ exports.listBanquets = async () => {
 
 exports.updateBanquet = async (req) => {
   try {
-    const { banquetId } = req.params;
+    const { hallId } = req.params;
     const { name, capacity, pricePerHour, amenities, description } = req.body;
     const files = req.files || [];
 
-    const banquet = await BANQUET.findById(banquetId);
+    const banquet = await BANQUET.findById(hallId);
     if (!banquet) {
       return { status: false, message: 'Banquet not found' };
     }
@@ -106,14 +109,14 @@ exports.updateBanquet = async (req) => {
 
 exports.deleteBanquet = async (req) => {
   try {
-    const { banquetId } = req.params;
+    const { hallId } = req.params;
 
-    const banquet = await BANQUET.findById(banquetId);
+    const banquet = await BANQUET.findById(hallId);
     if (!banquet) {
       return { status: false, message: 'Banquet not found' };
     }
 
-    await BANQUET.findByIdAndDelete(banquetId);
+    await BANQUET.findByIdAndDelete(hallId);
 
     return {
       status: true,
@@ -131,7 +134,7 @@ exports.deleteBanquet = async (req) => {
 
 exports.bookBanquet = async (req) => {
   try {
-    const { banquetId } = req.params; // banquetId
+    const { hallId } = req.params; // hallId
     const {
       guestName,
       phone,
@@ -146,7 +149,7 @@ exports.bookBanquet = async (req) => {
       return { status: false, message: 'All fields are required for booking' };
     }
 
-    const banquet = await BANQUET.findById(banquetId);
+    const banquet = await BANQUET.findById(hallId);
     if (!banquet) {
       return { status: false, message: 'Banquet not found' };
     }
@@ -162,7 +165,7 @@ exports.bookBanquet = async (req) => {
     }
 
     const booking = await BANQUETBOOKING.create({
-      banquetId: banquetId,
+      hallId: hallId,
       guestName,
       phone,
       eventDate,
@@ -199,15 +202,15 @@ exports.bookBanquet = async (req) => {
 
 exports.getBanquetBookings = async (req) => {
   try {
-    const { banquetId } = req.params;
+    const { hallId } = req.params;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const total = await BANQUETBOOKING.countDocuments({ banquetId: banquetId });
+    const total = await BANQUETBOOKING.countDocuments({ hallId: hallId });
 
     const bookings = await BANQUETBOOKING.aggregate([
-      { $match: { banquetId: new mongoose.Types.ObjectId(banquetId) } },
+      { $match: { hallId: new mongoose.Types.ObjectId(hallId) } },
       { $sort: { createdAt: -1 } },
       { $skip: skip },
       { $limit: limit },
@@ -304,7 +307,7 @@ exports.cancelBanquetBooking = async (req) => {
 
 exports.checkBanquetAvailability = async (req) => {
   try {
-    const { banquetId } = req.params; // banquetId
+    const { hallId } = req.params; // hallId
     const { eventDate, slot } = req.query;
 
     if (!eventDate || !slot) {
@@ -312,7 +315,7 @@ exports.checkBanquetAvailability = async (req) => {
     }
 
     const existingBooking = await BANQUETBOOKING.findOne({
-      banquetId: banquetId,
+      hallId: hallId,
       eventDate: new Date(eventDate),
       slot: slot,
       status: { $ne: 'cancelled' } // ignore cancelled
