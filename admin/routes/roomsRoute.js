@@ -8,8 +8,8 @@ const auth = require('../middlewares/auth');
 router.post('/add-room-type', auth, upload.array('images', 5), roomController.createRoomType);
 router.get('/view-room-types', auth, roomController.getAllRoomTypes);
 router.get('/view-room-type/:roomId', auth, roomController.getRoomTypeById);
-router.put('/update-room-type/:roomId', auth, upload.array('images', 5), roomController.updateRoomType);
-router.delete('/delete-room-type/:roomId', auth, roomController.deleteRoomType);
+router.post('/update-room-type/:roomId', auth, upload.array('images', 5), roomController.updateRoomType);
+router.post('/delete-room-type/:roomId', auth, roomController.deleteRoomType);
 
 // ADDING ROOM NUMBER
 router.post('/add-room/:typeId', auth, roomController.addRoom);
