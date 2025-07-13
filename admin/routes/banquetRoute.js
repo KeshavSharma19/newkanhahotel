@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const upload = require('../../utils/multer');
 const banquetController = require('../controllers/banquetController');
 const auth = require('../middlewares/auth');
-const upload = require('../../utils/multer');
 
 // BANQUET CRUD
 router.post('/add-banquet', auth, upload.array('images', 5), banquetController.addBanquet);
