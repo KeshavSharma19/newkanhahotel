@@ -5,9 +5,9 @@ const connectDB = require('../db/conn');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Auth routes
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use('/api/rooms', require('./routes/room.routes'));
+app.use('/api/bookings', require('./routes/booking.routes'));
 
 connectDB();
 
