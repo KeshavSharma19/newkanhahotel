@@ -14,9 +14,10 @@ router.post('/delete-room-type/:roomId', auth, roomController.deleteRoomType);
 // ADDING ROOM NUMBER
 router.post('/add-room/:typeId', auth, roomController.addRoom);
 router.get('/view-rooms/:typeId', auth, roomController.viewAllRooms);
-router.delete('/delete-room/:roomId', auth, roomController.deleteRoom);
-router.put('/change-room-status/:roomId', auth, roomController.toggleRoomAvailability);
+router.post('/delete-room/:roomId', auth, roomController.deleteRoom);
+router.post('/change-room-status/:roomId', auth, roomController.toggleRoomAvailability);
 router.get('/view-room/:roomId/bookings', auth, roomController.viewPastBookings);
+router.post('/update-room/:roomId', auth, roomController.updateRoom);
 
 // BOOKING ROOM
 router.post('/book-room/:roomId', auth, roomController.bookRoom);
