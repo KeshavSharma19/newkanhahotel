@@ -50,6 +50,16 @@ exports.bookBanquet = async (req, res) => {
   }
 }
 
+exports.updateBookingPayment = async (req, res) => {
+  try {
+    const result = await banquetService.updateBookingPayment(req);
+    res.status(result.status ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Error adding banquet:', error);
+    res.status(500).json({ status: false, message: 'Internal server error.' });
+  }
+}
+
 exports.getBanquetBookings = async (req, res) => {
   try {
     const result = await banquetService.getBanquetBookings(req);
