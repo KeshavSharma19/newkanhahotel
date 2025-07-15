@@ -12,6 +12,7 @@ router.delete('/delete-banquet/:hallId', auth, banquetController.deleteBanquet);
 
 // BANQUET BOOKING
 router.post('/:hallId/book-banquet', auth, banquetController.bookBanquet);
+router.post('/:bookingId/confirm-banquet-booking', auth, banquetController.updateBookingPayment);
 router.get('/:hallId/bookings', auth, banquetController.getBanquetBookings);
 router.patch('/booking/:bookingId/cancel', auth, banquetController.cancelBanquetBooking);
 router.get('/:hallId/check-availability', banquetController.checkBanquetAvailability);

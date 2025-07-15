@@ -220,7 +220,7 @@ exports.updateBookingPayment = async (req) => {
       return { status: false, message: 'Invalid payment status' };
     }
 
-    const booking = await ROOMBOOKING.findById(bookingId).populate('paymentId');
+    const booking = await BANQUETBOOKING.findById(bookingId).populate('paymentId');
     if (!booking) {
       return { status: false, message: 'Booking not found' };
     }
@@ -243,7 +243,7 @@ exports.updateBookingPayment = async (req) => {
       //   room.isAvailable = false;
       //   await room.save();
       // }
-      await ROOMBOOKING.findByIdAndUpdate(bookingId, { status: 'booked' });
+      await BANQUETBOOKING.findByIdAndUpdate(bookingId, { status: 'booked' });
     }
 
     return {
