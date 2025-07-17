@@ -13,4 +13,9 @@ router.use('/users', userRoutes);
 router.use('/banquet', banquetRoutes);
 router.use('/gallery', galleryRoutes);
 
+// ✅ Test route
+router.get('/test', (req, res) => {
+  res.status(200).json({ message: '✅ Test route working!' });
+});
+
 module.exports = router;
