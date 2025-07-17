@@ -20,15 +20,15 @@ const banquetBookingSchema = new mongoose.Schema({
   },
   eventDate: {
     type: Date,
-    required: true
+    // required: true
   },
   startTime: {
     type: String, // e.g., "15:00" or "03:00 PM"
-    required: true
+    // required: true
   },
   endTime: {
     type: String, // e.g., "19:00" or "07:00 PM"
-    required: true
+    // required: true
   },
   status: {
     type: String,

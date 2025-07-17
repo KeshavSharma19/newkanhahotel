@@ -21,7 +21,10 @@ exports.addBanquet = async (req) => {
     }
 
     // Handle image paths
-    const imagePaths = files.map(file => `/images/banquets/${file.filename}`);
+    const imagePaths = files.map(file => {
+      const folder = req.query.type || 'others';
+      return `/images/${folder}/${file.filename}`;
+    });
 
     // Parse amenities if sent as string (e.g., from form-data)
     const parsedAmenities = typeof amenities === 'string' ? JSON.parse(amenities) : amenities;
@@ -49,11 +52,14 @@ exports.addBanquet = async (req) => {
 
 exports.listBanquets = async () => {
   try {
-    const banquets = await BANQUET.find().sort({ createdAt: -1 });
+    const banquets = await BANQUET.find()
+      .select('-createdAt -updatedAt') 
+      .sort({ createdAt: -1 });
+
     return { 
-        status: true, 
-        message: 'Banquets fetched successfully', 
-        data: banquets 
+      status: true, 
+      message: 'Banquets fetched successfully', 
+      data: banquets 
     };
   } catch (error) {
     console.error('Service Error - listBanquets:', error);
@@ -134,18 +140,20 @@ exports.deleteBanquet = async (req) => {
 
 exports.bookBanquet = async (req) => {
   try {
-    const { hallId } = req.params; // hallId
+    const { hallId } = req.params;
     const {
       guestName,
       phone,
       eventDate,
       slot,
+      endTime,
       totalAmount,
       paymentMode = 'offline',
-      paymentMethod
+      paymentMethod,
+      startTime
     } = req.body;
 
-    if (!guestName || !phone || !eventDate || !slot || !totalAmount || !paymentMethod) {
+    if (!guestName || !phone || !eventDate || !slot || !endTime || !totalAmount || !paymentMethod) {
       return { status: false, message: 'All fields are required for booking' };
     }
 
@@ -159,7 +167,7 @@ exports.bookBanquet = async (req) => {
       user = await USER.create({
         name: guestName,
         phone,
-        email: '',
+        email: null, 
         password: ''
       });
     }
@@ -170,6 +178,8 @@ exports.bookBanquet = async (req) => {
       phone,
       eventDate,
       slot,
+      endTime, 
+      startTime,
       totalAmount,
       createdBy: 'admin',
       userId: user._id
@@ -179,7 +189,8 @@ exports.bookBanquet = async (req) => {
       bookingId: booking._id,
       amount: totalAmount,
       mode: paymentMode,
-      method: paymentMethod
+      method: paymentMethod,
+      bookingType: 'banquet'
     });
 
     booking.paymentId = payment._id;
@@ -196,6 +207,57 @@ exports.bookBanquet = async (req) => {
   } catch (error) {
     console.error('Service Error - bookBanquet:', error);
     return { status: false, message: 'Failed to book banquet' };
+  }
+};
+
+
+exports.updateBookingPayment = async (req) => {
+  try {
+    const { bookingId } = req.params;
+    const { paymentStatus } = req.body;
+
+    if (!['paid', 'pending', 'failed'].includes(paymentStatus)) {
+      return { status: false, message: 'Invalid payment status' };
+    }
+
+    const booking = await BANQUETBOOKING.findById(bookingId).populate('paymentId');
+    if (!booking) {
+      return { status: false, message: 'Booking not found' };
+    }
+
+    if (!booking.paymentId) {
+      return { status: false, message: 'Payment record not found for this booking' };
+    }
+
+    // Update payment record
+    const payment = await PAYMENT.findByIdAndUpdate(
+      booking.paymentId,
+      { status: paymentStatus, paidAt: new Date() },
+      { new: true }
+    );
+
+    // Optional: Mark room as unavailable if payment is successful
+    if (paymentStatus === 'paid') {
+      // const room = await ROOM.findById(booking.roomId);
+      // if (room) {
+      //   room.isAvailable = false;
+      //   await room.save();
+      // }
+      await BANQUETBOOKING.findByIdAndUpdate(bookingId, { status: 'booked' });
+    }
+
+    return {
+      status: true,
+      message: `Payment status updated to ${paymentStatus}`,
+      data: { bookingId, payment }
+    };
+
+  } catch (error) {
+    console.error('Service Error - updatePaymentStatus:', error);
+    return {
+      status: false,
+      message: 'Failed to update payment status'
+    };
   }
 };
 
