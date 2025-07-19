@@ -1,24 +1,26 @@
 const express = require("express");
 require('dotenv').config();
 const app = express();
+const cors = require('cors');
 const connectDB = require('../db/conn');
+const morgan = require('morgan');
+app.use(cors({
+  origin: '*',
+}));
 app.use(express.json());
+app.use(express.static('public'));
+app.use(morgan(':method :url :status - :response-time ms'));
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/api/auth", require("./routes/auth.routes"));
-app.use('/api/rooms', require('./routes/room.routes'));
-app.use('/api/bookings', require('./routes/booking.routes'));
 
 connectDB();
 
+const routes = require('./routes/indexRoute');
+app.use('/', routes);
 
-app.get('/', (req, res) => {
-    res.send('Hello, Express!');
+
+const PORT = process.env.WEB_PORT || 7000;
+app.listen(PORT, () => {
+  console.log(`🚀 Web server running on port ${PORT}`);
 });
 
-
-
-
-app.listen(3000, () => {
-    console.log(`Server is running on http://localhost:3000`);
-});

@@ -1,13 +1,35 @@
 const Room = require('../../models/roomModel');
 console.log("Room controller loaded");
+const roomService = require('../services/roomService');
 
-const getAllRoomTypes = async (req, res) => {
-    try {
-        const rooms = await Room.find();
-        res.json(rooms);
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch rooms' });
-    }
+// const getAllRoomTypes = async (req, res) => {
+//     try {
+//         const rooms = await Room.find();
+//         res.json(rooms);
+//     } catch (err) {
+//         res.status(500).json({ error: 'Failed to fetch rooms' });
+//     }
+// };
+
+
+exports.getAllRoom = async (req, res) => {
+  try {
+    const result = await roomService.getAllRoom(req);
+    res.status(result.status ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ status: false, message: 'Internal server error.' });
+  }
+};
+
+exports.getAllRoomTypes = async (req, res) => {
+  try {
+    const result = await roomService.getAllRoomTypes(req);
+    res.status(result.status ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ status: false, message: 'Internal server error.' });
+  }
 };
 
 
@@ -40,7 +62,7 @@ const getAllRoomTypes = async (req, res) => {
 
 
 
-const getRoomTypeById = async (req, res) => {
+exports.getRoomTypeById = async (req, res) => {
     const { id } = req.params;
     try {
         const room = await Room.findById(id);
@@ -65,8 +87,3 @@ const getRoomTypeById = async (req, res) => {
 
 
 
-
-module.exports = {
-    getAllRoomTypes,
-    getRoomTypeById,
-};

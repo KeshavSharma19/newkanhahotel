@@ -314,6 +314,36 @@ exports.toggleRoomAvailability = async (req) => {
   }
 };
 
+exports.updateRoom = async (req) => {
+  try {
+    const roomId = req.params.roomId;
+    const updates = req.body;
+   
+    const updatedRoom = await ROOM.findByIdAndUpdate(roomId, updates, {
+      new: true
+    });
+
+    if (!updatedRoom) {
+      return {
+        status: false,
+        message: 'Room not found'
+      };
+    }
+
+    return {
+      status: true,
+      message: 'Room updated successfully',
+      data: updatedRoom
+    };
+  } catch (error) {
+    console.error('Service Error - updateRoomType:', error);
+    return {
+      status: false,
+      message: 'Failed to update room'
+    };
+  }
+};
+
 
 exports.viewPastBookings = async (req) => {
   try {
