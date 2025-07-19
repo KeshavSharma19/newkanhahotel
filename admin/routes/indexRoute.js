@@ -14,7 +14,12 @@ router.use('/rooms', roomRoutes);
 router.use('/users', userRoutes);
 router.use('/banquet', banquetRoutes);
 router.use('/gallery', galleryRoutes);
-router.use('/categories', categoryRoutes);
-router.use('/items', menuItemRoutes);
+router.use('/category', categoryRoutes);
+router.use('/menu', menuItemRoutes);
+
+// ✅ Test route
+router.get('/test', (req, res) => {
+  res.status(200).json({ message: '✅ Test route working!' });
+});
 
 module.exports = router;
