@@ -38,3 +38,25 @@ exports.getAllRoomTypes = async () => {
   }
 };
 
+exports.RoomTypeById = async (id) => {
+  try {
+    const room = await RoomsType.findById(id, { createdAt: 0, updatedAt: 0 });
+    if (!room) {
+      return {
+        status: false,
+        message: 'Room not found'
+      };
+    }
+    return {
+      status: true,
+      message: 'Room fetched successfully',
+      data: room
+    };
+  } catch (error) {
+    console.error('Service Error - getRoomById:', error);
+    return {
+      status: false,
+      message: 'Failed to fetch room'
+    };
+  }
+};
