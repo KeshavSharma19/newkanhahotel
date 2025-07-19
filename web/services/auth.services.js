@@ -1,0 +1,181 @@
+const User = require('../../models/userModel');
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+
+exports.register = async (req) => {
+    if (!req.body) {
+        return { status: false, message: 'Request body is missing' };
+    }
+    const { firstname, lastname, email, password, phone } = req.body;
+
+    if (!firstname || !email || !password || !phone) {
+        return { status: false, message: 'All fields are required' };
+    }
+
+    try {
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return { status: false, message: 'User already exists' };
+
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create user
+        const user = new User({
+            firstname,
+            lastname,
+            email,
+            password: hashedPassword,
+            phone
+        });
+        // Create JWT token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: "7d",
+        });
+
+        user.token = token;
+        await user.save();
+
+        return {
+            status: true,
+            message: 'User registered successfully!',
+            token,
+            user: {
+                id: user._id,
+                name: user.firstname + ' ' + user.lastname,
+                email: user.email,
+            },
+        };
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+exports.login = async (req) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        // return res.status(400).json({ msg: "Please enter email and password" });
+        return { status: false, message: 'Please enter email and password' };
+
+    }
+
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return { status: false, message: 'Invalid credentials' };
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) return { status: false, message: 'Invalid Password' };
+
+
+        // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        //     expiresIn: "7d",
+        // });
+
+        return {
+            status: true,
+            message: 'Login successful',
+            token: user.token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                phone: user.phone,
+            },
+        };
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: "Server error" });
+    }
+};
+
+exports.loginStudentWithMobile = async (req) => {
+    const { mobileNumber, countryCode = "+91" } = req.body;
+
+    if (!mobileNumber) {
+        // return res.status(400).json({ msg: "Mobile number is required" });
+        return { status: false, message: 'Mobile number is required' };
+
+    }
+
+    try {
+        const otp =
+            process.env.OTPENV === "LOCAL"
+                ? "123456"
+                : crypto.randomInt(100000, 999999).toString();
+
+        const fullPhoneNumber = `${countryCode}${mobileNumber}`;
+
+        let user = await User.findOne({ phone: mobileNumber });
+
+        if (!user) {
+            user = new User({
+                phone: mobileNumber,
+                otp,
+                name: "New User",
+            });
+        } else {
+            user.otp = otp;
+        }
+
+        await user.save();
+        return {
+            status: true,
+            message: 'OTP sent successfully',
+            phone: mobileNumber,
+
+        };
+
+    } catch (err) {
+        console.error("Login Error:", err);
+        // res.status(500).json({ msg: "Server error" });
+        return { status: false, message: 'Server error' };
+
+    }
+};
+
+exports.mobileVerifyOtp = async (req) => {
+    const { phone, otp } = req.body;
+
+    let user;
+
+    try {
+        user = await User.findOne({ phone });
+        console.log("useruseruser", user);
+
+        if (!user) {
+            return { status: false, message: 'user not found' };
+        }
+
+        if (!user.otp) {
+            return { status: false, message: 'OTP not generated' };
+        }
+
+        if (user.otp != otp) {
+            return { status: false, message: 'Invalid OTP' };
+
+        }
+
+        user.otp = null;
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: "1y",
+        });
+        await user.save();
+
+        return {
+            status: true,
+            message: 'user loggedIn successfully',
+            token,
+            user
+        };
+    } catch (error) {
+        console.error(error);
+        return { status: false, message: 'Server error' };
+    }
+};

@@ -6,13 +6,15 @@ const {
   createRoomType,
   updateRoomType,
   deleteRoomType,
-  getAllRoom
+  getAllRoom,
+  getRoomById
 } = require('../controllers/room.controller');
 
 const { verifyToken } = require('../middlewares/auth.middleware');
 
 router.get('/view-room-types', getAllRoomTypes);
+router.get('/room-types/:id', getRoomTypeById);
 router.get('/getallrooms', getAllRoom);
-router.get('/:id', getRoomTypeById);
+router.get('/:id', getRoomById);
 
 module.exports = router;
