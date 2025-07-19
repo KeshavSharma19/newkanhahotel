@@ -2,6 +2,8 @@ const Booking = require('../../models/roomBooking');
 const Room = require('../../models/roomModel');
 const User = require('../../models/userModel');
 const Payment = require('../../models/paymentModel');
+const razorpay = require('../../utils/razorpay');
+
 exports.bookRoom = async (req) => {
     try {
         const { roomId } = req.params;
@@ -12,14 +14,13 @@ exports.bookRoom = async (req) => {
             checkOut,
             totalAmount,
             paymentMode = 'online',
-            paymentMethod,
+            paymentMethod = 'razorpay',
         } = req.body;
 
         if (!guestName || !phone || !checkIn || !checkOut || !totalAmount || !paymentMethod) {
             return { status: false, message: 'All booking and payment details are required' };
         }
 
-        // Parse and validate dates
         const parsedCheckIn = new Date(checkIn);
         const parsedCheckOut = new Date(checkOut);
 
@@ -31,7 +32,6 @@ exports.bookRoom = async (req) => {
             return { status: false, message: 'Check-out must be after check-in' };
         }
 
-        // Check if room exists
         const room = await Room.findById(roomId);
         if (!room) {
             return { status: false, message: 'Room not found.' };
@@ -51,6 +51,7 @@ exports.bookRoom = async (req) => {
             });
         }
 
+        // Create booking
         const booking = await Booking.create({
             roomId,
             guestName,
@@ -62,11 +63,31 @@ exports.bookRoom = async (req) => {
             userId: user._id
         });
 
+        // Razorpay order creation (only if paymentMode is online)
+        let razorpayOrder = null;
+        if (paymentMode === 'online') {
+            const orderOptions = {
+                amount: totalAmount * 100, // amount in paisa
+                currency: 'INR',
+                receipt: `booking_${booking._id}`,
+                notes: {
+                    guestName,
+                    phone,
+                    bookingId: booking._id.toString()
+                }
+            };
+
+            razorpayOrder = await razorpay.orders.create(orderOptions);
+        }
+
+        // Save payment record with Razorpay order ID
         const payment = await Payment.create({
             bookingId: booking._id,
             amount: totalAmount,
             mode: paymentMode,
             method: paymentMethod,
+            transactionId: razorpayOrder?.id || null,
+            bookingType: 'room'
         });
 
         booking.paymentId = payment._id;
@@ -77,7 +98,8 @@ exports.bookRoom = async (req) => {
             message: 'Room booking processed successfully!',
             data: {
                 booking,
-                payment
+                payment,
+                razorpayOrder // send this to frontend for Razorpay checkout
             }
         };
 
@@ -89,6 +111,7 @@ exports.bookRoom = async (req) => {
         };
     }
 };
+
 
 exports.getUserBookings = async (req) => {
   try {
