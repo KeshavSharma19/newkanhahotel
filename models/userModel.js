@@ -2,19 +2,22 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
+    firstname: {
       type: String,
       required: true,
       trim: true
     },
-
+     lastname: {
+      type: String,
+      trim: true
+    },
     email: {
       type: String,
       // required: true,
       unique: true,
       lowercase: true,
       trim: true,
-      sparse: true, 
+      sparse: true,
     },
 
     phone: {
@@ -27,7 +30,9 @@ const userSchema = new mongoose.Schema(
       // required: true,
       // minlength: 6
     },
-
+    otp: {
+      type: Number
+    },
     token: {
       type: String // for JWT storage if needed (optional)
     },

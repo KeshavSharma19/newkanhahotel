@@ -12,9 +12,8 @@ exports.bookRoom = async (req) => {
             phone,
             checkIn,
             checkOut,
-            totalAmount,
             paymentMode = 'online',
-            paymentMethod = 'razorpay',
+            paymentMethod = "razorpay_gateway",
         } = req.body;
 
         if (!guestName || !phone || !checkIn || !checkOut || !totalAmount || !paymentMethod) {
