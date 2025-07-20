@@ -5,5 +5,6 @@ const auth = require('../middlewares/auth');
 
 router.get('/all-users', auth, userController.getAllUsers);
 router.get('/user-bookings/:userId', auth, userController.getUserBookings);
+// status change api want
 
 module.exports = router;
