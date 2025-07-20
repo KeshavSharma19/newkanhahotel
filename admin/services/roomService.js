@@ -157,23 +157,36 @@ exports.updateRoomType = async (req) => {
 
 exports.deleteRoomType = async (req) => {
   try {
-    const roomId = req.params.roomId;
-    const deleted = await ROOMTYPE.findByIdAndDelete(roomId);
+    const roomTypeId = req.params.roomId;
+
+    // Check if any room exists under this roomType
+    const existingRooms = await ROOM.findOne({ roomTypeId });
+    if (existingRooms) {
+      return {
+        status: false,
+        message: 'Cannot delete. Please remove all rooms under this room type first.'
+      };
+    }
+
+    // Proceed to delete RoomType
+    const deleted = await ROOMTYPE.findByIdAndDelete(roomTypeId);
     if (!deleted) {
       return {
         status: false,
-        message: 'Room not found'
+        message: 'Room type not found'
       };
     }
+
     return {
       status: true,
-      message: 'Room deleted successfully'
+      message: 'Room type deleted successfully'
     };
   } catch (error) {
     console.error('Service Error - deleteRoomType:', error);
     return {
       status: false,
-      message: 'Failed to delete room'
+      message: 'Failed to delete room type',
+      error: error.message
     };
   }
 };
