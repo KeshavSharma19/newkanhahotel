@@ -1,9 +1,4 @@
-const User = require('../../models/userModel');
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const authService = require('../services/auth.services');
-
-
 
 const registerUser = async (req, res) => {
     const result = await authService.register(req);

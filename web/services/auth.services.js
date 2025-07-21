@@ -3,58 +3,80 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 
 exports.register = async (req) => {
+  try {
     if (!req.body) {
-        return { status: false, message: 'Request body is missing' };
+      return { status: false, message: 'Request body is missing' };
     }
+
     const { firstname, lastname, email, password, phone } = req.body;
 
     if (!firstname || !email || !password || !phone) {
-        return { status: false, message: 'All fields are required' };
+      return { status: false, message: 'All fields are required' };
     }
 
-    try {
-        // Check if user already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return { status: false, message: 'User already exists' };
+    const trimmedEmail = email.trim().toLowerCase();
 
-        }
-
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Create user
-        const user = new User({
-            firstname,
-            lastname,
-            email,
-            password: hashedPassword,
-            phone
-        });
-        // Create JWT token
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-            expiresIn: "7d",
-        });
-
-        user.token = token;
-        await user.save();
-
-        return {
-            status: true,
-            message: 'User registered successfully!',
-            token,
-            user: {
-                id: user._id,
-                name: user.firstname + ' ' + user.lastname,
-                email: user.email,
-            },
-        };
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+    // Convert phone to number and validate
+    const phoneNumber = Number(phone);
+    if (isNaN(phoneNumber) || phoneNumber.toString().length < 10) {
+      return { status: false, message: 'Invalid phone number' };
     }
+
+    // Check if email already exists
+    const existingEmail = await User.findOne({ email: trimmedEmail });
+    if (existingEmail) {
+      return { status: false, message: 'Email already registered' };
+    }
+
+    // Check if phone already exists
+    const existingPhone = await User.findOne({ phone: phoneNumber });
+    if (existingPhone) {
+      return { status: false, message: 'Phone number already registered' };
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create user
+    const user = new User({
+      firstname: firstname.trim(),
+      lastname: lastname?.trim() || '',
+      email: trimmedEmail,
+      password: hashedPassword,
+      phone: phoneNumber,
+    });
+
+    // Create JWT token
+    const token = jwt.sign(
+      {
+        id: user._id,
+        name: user.firstname + ' ' + user.lastname,
+        email: user.email,
+        phone: user.phone,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    user.token = token;
+    await user.save();
+
+    return {
+      status: true,
+      message: 'User registered successfully!',
+      token,
+      user: {
+        id: user._id,
+        name: user.firstname + ' ' + user.lastname,
+        email: user.email,
+        phone: user.phone,
+      },
+    };
+  } catch (err) {
+    console.error('Service Error - register:', err);
+    return { status: false, message: 'Server error', error: err.message };
+  }
 };
 
 exports.login = async (req) => {
