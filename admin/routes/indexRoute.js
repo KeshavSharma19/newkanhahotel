@@ -8,7 +8,7 @@ const banquetRoutes = require('../routes/banquetRoute');
 const galleryRoutes = require('../routes/galleryRoute');
 const categoryRoutes = require('../routes/categoryRoutes');
 const menuItemRoutes = require('../routes/menuItemRoutes');
-
+const bookingRoutes = require('../routes/tablebookingRoutes');
 router.use('/admin', adminRoutes);
 router.use('/rooms', roomRoutes);
 router.use('/users', userRoutes);
@@ -16,6 +16,7 @@ router.use('/banquet', banquetRoutes);
 router.use('/gallery', galleryRoutes);
 router.use('/category', categoryRoutes);
 router.use('/menu', menuItemRoutes);
+router.use('/bookings', bookingRoutes);
 
 // ✅ Test route
 router.get('/test', (req, res) => {
