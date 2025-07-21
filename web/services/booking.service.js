@@ -1,19 +1,27 @@
 const Booking = require('../../models/roomBooking');
 const Room = require('../../models/roomModel');
+const Banquet = require('../../models/banquetModel');
+const Table = require('../../models/tableModel');
 const User = require('../../models/userModel');
 const Payment = require('../../models/paymentModel');
 const razorpay = require('../../utils/razorpay');
+const RoomBooking = require('../../models/roomBooking');
+const BanquetBooking = require('../../models/banquetBooking');
+const TableBooking = require('../../models/tableBooking');
+const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 exports.bookRoom = async (req) => {
     try {
-        const { roomId } = req.params;
+        const { roomTypeId } = req.params;
         const {
             guestName,
             phone,
             checkIn,
             checkOut,
+            totalAmount,
             paymentMode = 'online',
-            paymentMethod = "razorpay_gateway",
+            paymentMethod = 'razorpay_gateway',
         } = req.body;
 
         if (!guestName || !phone || !checkIn || !checkOut || !totalAmount || !paymentMethod) {
@@ -31,15 +39,35 @@ exports.bookRoom = async (req) => {
             return { status: false, message: 'Check-out must be after check-in' };
         }
 
-        const room = await Room.findById(roomId);
-        if (!room) {
-            return { status: false, message: 'Room not found.' };
+        // Step 1: Find all rooms of the given roomType
+        const rooms = await Room.find({ roomTypeId, isAvailable: true });
+        if (!rooms || rooms.length === 0) {
+            return { status: false, message: 'No rooms available for this room type' };
         }
 
-        if (!room.isAvailable) {
-            return { status: false, message: 'Room is currently not available.' };
+        // Step 2: Check availability in RoomBooking
+        let availableRoom = null;
+
+        for (const room of rooms) {
+            const overlappingBookings = await RoomBooking.find({
+                roomId: room._id,
+                $or: [
+                    { checkIn: { $lt: parsedCheckOut }, checkOut: { $gt: parsedCheckIn } }
+                ],
+                status: { $in: ['pending', 'confirmed'] }
+            });
+
+            if (overlappingBookings.length === 0) {
+                availableRoom = room;
+                break;
+            }
         }
 
+        if (!availableRoom) {
+            return { status: false, message: 'No available rooms for the selected date/time' };
+        }
+
+        // Step 3: Create or find user
         let user = await User.findOne({ phone });
         if (!user) {
             user = await User.create({
@@ -50,23 +78,24 @@ exports.bookRoom = async (req) => {
             });
         }
 
-        // Create booking
-        const booking = await Booking.create({
-            roomId,
+        // Step 4: Create Booking in pending status
+        const booking = await RoomBooking.create({
+            roomId: availableRoom._id,
             guestName,
             phone,
             checkIn: parsedCheckIn,
             checkOut: parsedCheckOut,
             totalAmount,
             createdBy: 'guest',
-            userId: user._id
+            userId: user._id,
+            status: 'pending'
         });
 
-        // Razorpay order creation (only if paymentMode is online)
+        // Step 5: Razorpay order creation
         let razorpayOrder = null;
         if (paymentMode === 'online') {
             const orderOptions = {
-                amount: totalAmount * 100, // amount in paisa
+                amount: totalAmount * 100, // in paisa
                 currency: 'INR',
                 receipt: `booking_${booking._id}`,
                 notes: {
@@ -75,11 +104,10 @@ exports.bookRoom = async (req) => {
                     bookingId: booking._id.toString()
                 }
             };
-
             razorpayOrder = await razorpay.orders.create(orderOptions);
         }
 
-        // Save payment record with Razorpay order ID
+        // Step 6: Create Payment record
         const payment = await Payment.create({
             bookingId: booking._id,
             amount: totalAmount,
@@ -94,11 +122,11 @@ exports.bookRoom = async (req) => {
 
         return {
             status: true,
-            message: 'Room booking processed successfully!',
+            message: 'Room booking initiated successfully!',
             data: {
                 booking,
                 payment,
-                razorpayOrder // send this to frontend for Razorpay checkout
+                razorpayOrder // send to frontend for Razorpay checkout
             }
         };
 
@@ -112,19 +140,166 @@ exports.bookRoom = async (req) => {
 };
 
 
-exports.getUserBookings = async (req) => {
+exports.bookBanquet = async (req) => {
   try {
-    const bookings = await Booking.find({ userId: req.user.id }).populate('roomId');
+    const {
+      guestName,
+      phone,
+      eventDate,
+      startTime,
+      endTime,
+      totalAmount,
+      paymentMode = 'online',
+      paymentMethod = 'razorpay_gateway',
+    } = req.body;
+
+    if (!guestName || !phone || !eventDate || !startTime || !endTime || !totalAmount || !paymentMethod) {
+      return { status: false, message: 'All booking and payment details are required' };
+    }
+
+    const parsedEventDate = new Date(eventDate);
+    if (isNaN(parsedEventDate.getTime())) {
+      return { status: false, message: 'Invalid event date format' };
+    }
+
+    // Step 1: Get all banquet halls
+    const allHalls = await Banquet.find({});
+    if (!allHalls.length) {
+      return { status: false, message: 'No banquet halls available in the system' };
+    }
+
+    // Step 2: Find one available banquet hall
+    let availableHall = null;
+
+    for (const hall of allHalls) {
+      const isClashing = await BanquetBooking.findOne({
+        hallId: hall._id,
+        eventDate: parsedEventDate,
+        $or: [
+          { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
+        ],
+        status: { $in: ['pending', 'confirmed'] }
+      });
+
+      if (!isClashing) {
+        availableHall = hall;
+        break; // Pick the first available hall (or remove break to collect all and pick random)
+      }
+    }
+
+    if (!availableHall) {
+      return { status: false, message: 'No banquet hall available for the selected time slot' };
+    }
+
+    // Step 3: Find or create user
+    let user = await User.findOne({ phone });
+    if (!user) {
+      user = await User.create({
+        name: guestName,
+        phone,
+        email: '',
+        password: ''
+      });
+    }
+
+    // Step 4: Create booking
+    const booking = await BanquetBooking.create({
+      hallId: availableHall._id,
+      guestName,
+      phone,
+      eventDate: parsedEventDate,
+      startTime,
+      endTime,
+      totalAmount,
+      createdBy: 'guest',
+      userId: user._id,
+      status: 'pending'
+    });
+
+    // Step 5: Razorpay order creation
+    let razorpayOrder = null;
+    if (paymentMode === 'online') {
+      const orderOptions = {
+        amount: totalAmount * 100,
+        currency: 'INR',
+        receipt: `banquet_booking_${booking._id}`,
+        notes: {
+          guestName,
+          phone,
+          bookingId: booking._id.toString()
+        }
+      };
+      razorpayOrder = await razorpay.orders.create(orderOptions);
+    }
+
+    // Step 6: Create payment record
+    const payment = await Payment.create({
+      bookingId: booking._id,
+      amount: totalAmount,
+      mode: paymentMode,
+      method: paymentMethod,
+      transactionId: razorpayOrder?.id || null,
+      bookingType: 'banquet'
+    });
+
+    booking.paymentId = payment._id;
+    await booking.save();
+
     return {
       status: true,
-      message: 'Bookings retrieved successfully',
-      data: bookings
+      message: 'Banquet booking initiated successfully!',
+      data: {
+        booking,
+        payment,
+        razorpayOrder
+      }
     };
+
+  } catch (error) {
+    console.error('Service Error - bookBanquet:', error);
+    return {
+      status: false,
+      message: 'Something went wrong while booking the banquet'
+    };
+  }
+};
+
+
+exports.getUserBookings = async (req) => {
+  try {
+    const userId = req.user.id;
+
+    const roomBookings = await Booking.find({ userId }).populate('roomId');
+    const banquetBookings = await BanquetBooking.find({ userId }).populate('hallId');
+
+    const formattedRoomBookings = roomBookings.map(b => ({
+      ...b.toObject(),
+      bookingType: 'room'
+    }));
+
+    const formattedBanquetBookings = banquetBookings.map(b => ({
+      ...b.toObject(),
+      bookingType: 'banquet'
+    }));
+
+    // Merge both arrays
+    const allBookings = [...formattedRoomBookings, ...formattedBanquetBookings];
+
+    // Sort by createdAt descending (latest first)
+    allBookings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    return {
+      status: true,
+      message: 'All bookings retrieved successfully',
+      data: allBookings
+    };
+
   } catch (error) {
     console.error('Service Error - getUserBookings:', error);
     return { status: false, message: 'Failed to retrieve bookings' };
   }
 };
+
 
 exports.cancelBooking = async (req) => {
   try {
@@ -149,4 +324,87 @@ exports.cancelBooking = async (req) => {
   }
 };
 
+
+exports.razorpayWebhook = async (req) => {
+  const secret = process.env.RAZORPAY_KEY_SECRET;
+
+  const signature = req.headers['x-razorpay-signature'];
+  const body = JSON.stringify(req.body);
+
+  const expectedSignature = crypto.createHmac('sha256', secret)
+    .update(body)
+    .digest('hex');
+
+  if (signature !== expectedSignature) {
+    console.warn('Invalid Razorpay webhook signature');
+    return { status: false, message: 'Invalid signature' };
+  }
+
+  const event = req.body.event;
+  const transactionId = req.body.payload?.payment?.entity?.id;
+
+  try {
+    const payment = await Payment.findOne({ transactionId });
+    if (!payment) {
+      return { status: false, message: 'Payment not found' };
+    }
+
+    const { bookingType, bookingId } = payment;
+
+    const updateBookingStatus = async (status) => {
+      const update = { status };
+      switch (bookingType) {
+        case 'room':
+          await RoomBooking.findByIdAndUpdate(bookingId, update);
+          break;
+        case 'banquet':
+          await BanquetBooking.findByIdAndUpdate(bookingId, update);
+          break;
+        case 'table':
+          await TableBooking.findByIdAndUpdate(bookingId, update);
+          break;
+        default:
+          console.warn('Unknown booking type:', bookingType);
+      }
+    };
+
+    if (event === 'payment.captured') {
+      payment.status = 'paid';
+      payment.paidAt = new Date();
+      await payment.save();
+
+      await updateBookingStatus('booked');
+
+      return {
+        status: true,
+        message: `Payment captured and ${bookingType} booking confirmed.`,
+      };
+    }
+
+    if (event === 'payment.failed') {
+      payment.status = 'failed';
+      await payment.save();
+
+      await updateBookingStatus('cancelled');
+
+      return {
+        status: true,
+        message: `Payment failed and ${bookingType} booking cancelled.`,
+      };
+    }
+
+    return {
+      status: true,
+      message: 'Unhandled or ignored event type',
+    };
+
+  } catch (error) {
+    console.error('Webhook Service Error:', error);
+    return {
+      status: false,
+      message: 'Webhook processing failed',
+      error: error.message
+    };
+  }
+};
 

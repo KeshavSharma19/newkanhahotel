@@ -3,9 +3,6 @@ const router = express.Router();
 const {
   getAllRoomTypes,
   getRoomTypeById,
-  createRoomType,
-  updateRoomType,
-  deleteRoomType,
   getAllRoom,
   getRoomById
 } = require('../controllers/room.controller');

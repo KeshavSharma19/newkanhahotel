@@ -1,4 +1,4 @@
-const bookingService = require('../services/bookingService');
+const bookingService = require('../services/tablebookingservice');
 
 exports.createBooking = async (req, res) => {
     try {
@@ -19,8 +19,6 @@ exports.getAllBookings = async (req, res) => {
         res.status(500).json({ status: false, message: 'Internal server error' });
     }
 };
-
-
 
 exports.updateBookingStatus = async (req, res) => {
     try {
