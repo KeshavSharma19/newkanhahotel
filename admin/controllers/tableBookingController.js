@@ -20,8 +20,6 @@ exports.getAllBookings = async (req, res) => {
     }
 };
 
-
-
 exports.updateBookingStatus = async (req, res) => {
     try {
         const result = await bookingService.updateBookingStatus(req);
