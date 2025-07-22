@@ -3,8 +3,8 @@ const router = express.Router();
 const bookingController = require('../controllers/tableBookingController');
 const auth = require('../middlewares/auth');
 
-router.post('/create', auth , bookingController.createBooking);
-router.get('/', auth , bookingController.getAllBookings);
-router.put('/:id/status',  auth , bookingController.updateBookingStatus);
+router.post('/table-booking-create', auth , bookingController.createBooking);
+router.get('/get-table-booking', auth , bookingController.getAllBookings);
+router.post('/update-status/:id',  auth , bookingController.updateBookingStatus);
 
 module.exports = router;
