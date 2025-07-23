@@ -1,11 +1,14 @@
 const TableBooking = require('../../models/tableBooking');
 const MenuItem = require('../../models/menuItem');
+const Table = require('../../models/tableModel');
+const PAYMENT = require('../../models/paymentModel');
 
 exports.createBooking = async (req) => {
   try {
     const {
       guestName, userId, phone, date, timeSlot, numberOfGuests,
-      tableNumber, specialRequest, preOrderedItems
+      tableNumber, specialRequest, preOrderedItems, tableId, paymentMode = 'offline', paymentMethod 
+
     } = req.body;
 
     if (!guestName || !phone || !date || !timeSlot || !numberOfGuests) {
@@ -22,8 +25,13 @@ exports.createBooking = async (req) => {
         }
       }
     }
+    const table = await Table.findById(tableId);
+    if (!table || !table.isAvailable) {
+      return { status: false, message: 'Table not available.' };
+    }
 
     const booking = await TableBooking.create({
+      tableId,
       guestName,
       userId,
       phone,
@@ -35,6 +43,16 @@ exports.createBooking = async (req) => {
       preOrderedItems,
       totalAmount
     });
+    const payment = await PAYMENT.create({
+      bookingId: booking._id,
+      amount: totalAmount,
+      mode: paymentMode,
+      method: paymentMethod,
+      bookingType: 'table',
+    });
+
+    booking.paymentId = payment._id;
+    await booking.save();
 
     return { status: true, message: 'Booking successful', data: booking };
 

@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const tableBookingSchema = new mongoose.Schema({
   guestName: { type: String, required: true },
+  tableId: { type: mongoose.Schema.Types.ObjectId, ref: 'Table' },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   phone: { type: String, required: true },
   date: { type: Date, required: true },
@@ -25,6 +26,10 @@ const tableBookingSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'paid'],
     default: 'pending'
+  },
+  paymentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Payment'
   },
   createdAt: { type: Date, default: Date.now }
 });
