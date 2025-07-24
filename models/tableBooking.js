@@ -6,32 +6,43 @@ const tableBookingSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   phone: { type: String, required: true },
   date: { type: Date, required: true },
-  timeSlot: { type: String, required: true },
+
+  startTime: { type: Date, required: true },
+  endTime: { type: Date, required: true },
+
   numberOfGuests: { type: Number, required: true },
-  tableNumber: { type: Number },
+  tableNumber: { type: String },
+  
   status: {
     type: String,
-    enum: ['booked', 'cancelled', 'completed'],
-    default: 'booked'
+    enum: ['pending', 'booked', 'cancelled', 'completed'],
+    default: 'pending'
   },
-  specialRequest: { type: String },
+
+  specialRequest: { type: String, default: '' },
+
   preOrderedItems: [
     {
       menuItemId: { type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' },
       quantity: { type: Number, default: 1 }
     }
   ],
+
   totalAmount: { type: Number },
+
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid'],
     default: 'pending'
   },
+
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment'
-  },
-  createdAt: { type: Date, default: Date.now }
+  }
+}, {
+  timestamps: true,
+  versionKey: false
 });
 
 module.exports = mongoose.model('TableBooking', tableBookingSchema);

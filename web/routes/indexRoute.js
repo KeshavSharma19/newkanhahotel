@@ -3,10 +3,14 @@ const router = express.Router();
 
 const authRoutes = require('../routes/auth.routes');
 const roomRoutes = require('../routes/room.routes');
-const roomBooking = require('../routes/booking.routes');
+const bookingRoutes = require('../routes/booking.routes');
+const banquetRoutes = require('../routes/banquet.route'); 
+const restaurantRoutes = require('../routes/restaurant.route');
 
 router.use('/auth', authRoutes);
 router.use('/rooms', roomRoutes);
-router.use('/bookings', roomBooking);
+// router.use('/banquets', banquetRoutes);
+// router.use('/restaurants', restaurantRoutes);
+router.use('/bookings', bookingRoutes);
 
 module.exports = router;
