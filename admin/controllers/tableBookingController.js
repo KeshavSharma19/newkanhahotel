@@ -2,7 +2,7 @@ const bookingService = require('../services/tablebookingservice');
 
 exports.createBooking = async (req, res) => {
     try {
-        const result = await bookingService.createBooking(req);
+        const result = await bookingService.createTableBooking(req);
         res.status(result.status ? 200 : 400).json(result);
     } catch (error) {
         console.error('Controller Error - createBooking:', error);
