@@ -266,6 +266,143 @@ exports.bookBanquet = async (req) => {
 };
 
 
+exports.bookTable = async (req) => {
+  try {
+    const {
+      guestName,
+      phone,
+      date,
+      startTime,
+      endTime,
+      numberOfGuests,
+      totalAmount,
+      paymentMode = 'online',
+      paymentMethod = 'razorpay_gateway',
+      specialRequest,
+      preOrderedItems = []
+    } = req.body;
+
+    // 1. Validate input
+    if (!guestName || !phone || !date || !startTime || !endTime || !numberOfGuests || !totalAmount || !paymentMethod) {
+      return { status: false, message: 'All booking and payment details are required' };
+    }
+
+    const parsedDate = new Date(date);
+    if (isNaN(parsedDate.getTime())) {
+      return { status: false, message: 'Invalid date format' };
+    }
+
+    // Combine date with startTime and endTime
+    const [startHours, startMinutes] = startTime.split(':').map(Number);
+    const [endHours, endMinutes] = endTime.split(':').map(Number);
+
+    const startDateTime = new Date(parsedDate);
+    startDateTime.setHours(startHours, startMinutes, 0, 0);
+
+    const endDateTime = new Date(parsedDate);
+    endDateTime.setHours(endHours, endMinutes, 0, 0);
+
+    // 2. Find an available table for the given date & time
+    const allTables = await Table.find({ isAvailable: true });
+    if (!allTables.length) {
+      return { status: false, message: 'No tables available in the system' };
+    }
+
+    let availableTable = null;
+
+for (const table of allTables) {
+  const isClashing = await TableBooking.findOne({
+    tableId: table._id,
+    date: parsedDate,
+    $or: [
+      { startTime: { $lt: endDateTime }, endTime: { $gt: startDateTime } }
+    ],
+    status: { $in: ['booked', 'confirmed'] }
+  });
+
+  if (!isClashing) {
+    availableTable = table;
+    break;
+  }
+}
+
+if (!availableTable) {
+  return { status: false, message: 'No table available for the selected time slot' };
+}
+
+// 3. Find or create user
+let user = await User.findOne({ phone });
+if (!user) {
+  user = await User.create({
+    name: guestName,
+    phone,
+    email: '',
+    password: ''
+  });
+}
+
+// 4. Create booking in 'pending' status
+const booking = await TableBooking.create({
+  guestName,
+  phone,
+  date: parsedDate,
+  startTime: startDateTime,
+  endTime: endDateTime,
+  numberOfGuests,
+  tableId: availableTable._id,
+  specialRequest,
+  preOrderedItems,
+  totalAmount,
+  userId: user._id,
+  status: 'pending',
+  createdBy: 'guest'
+});
+
+    // 5. Create Razorpay order
+    let razorpayOrder = null;
+    if (paymentMode === 'online') {
+      const orderOptions = {
+        amount: totalAmount * 100, // in paisa
+        currency: 'INR',
+        receipt: `table_booking_${booking._id}`,
+        notes: {
+          guestName,
+          phone,
+          bookingId: booking._id.toString()
+        }
+      };
+      razorpayOrder = await razorpay.orders.create(orderOptions);
+    }
+
+    // 6. Create Payment record
+    const payment = await Payment.create({
+      bookingId: booking._id,
+      amount: totalAmount,
+      mode: paymentMode,
+      method: paymentMethod,
+      transactionId: razorpayOrder?.id || null,
+      bookingType: 'table'
+    });
+
+    booking.paymentId = payment._id;
+    await booking.save();
+
+    return {
+      status: true,
+      message: 'Table booking initiated successfully!',
+      data: {
+        booking,
+        payment,
+        razorpayOrder
+      }
+    };
+
+  } catch (error) {
+    console.error('Service Error - bookTable:', error);
+    return { status: false, message: 'Failed to book table' };
+  }
+};
+
 exports.getUserBookings = async (req) => {
   try {
     const userId = req.user.id;
