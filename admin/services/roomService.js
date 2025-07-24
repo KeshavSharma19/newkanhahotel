@@ -22,7 +22,7 @@ exports.createRoomType = async (req) => {
       type: { $regex: new RegExp(`^${type}$`, 'i') }
     });
 
-    if( existingRoomType ) {
+    if (existingRoomType) {
       return {
         status: false,
         message: 'Room type already exists!'
@@ -87,7 +87,7 @@ exports.getAllRoomTypes = async () => {
 exports.getRoomTypeById = async (req) => {
   try {
     const roomId = req.params.roomId;
-    const room = await ROOMTYPE.findById(roomId, {createdAt: 0, updatedAt: 0});
+    const room = await ROOMTYPE.findById(roomId, { createdAt: 0, updatedAt: 0 });
     if (!room) {
       return {
         status: false,
@@ -331,7 +331,7 @@ exports.updateRoom = async (req) => {
   try {
     const roomId = req.params.roomId;
     const updates = req.body;
-   
+
     const updatedRoom = await ROOM.findByIdAndUpdate(roomId, updates, {
       new: true
     });
@@ -468,6 +468,7 @@ exports.bookRoom = async (req) => {
       totalAmount,
       paymentMode = 'offline',
       paymentMethod,
+      email
     } = req.body;
 
     if (!guestName || !phone || !checkIn || !checkOut || !totalAmount || !paymentMethod) {
@@ -493,13 +494,19 @@ exports.bookRoom = async (req) => {
 
     let user = await USER.findOne({ phone });
     if (!user) {
-      user = await USER.create({
-        name: guestName,
+      const newUser = {
+        firstname: guestName,
         phone,
-        email: '',
         password: ''
-      });
+      };
+
+      if (email) {
+        newUser.email = email;
+      }
+
+      user = await USER.create(newUser);
     }
+
 
     const booking = await ROOMBOOKING.create({
       roomId,
@@ -507,6 +514,7 @@ exports.bookRoom = async (req) => {
       phone,
       checkIn: parsedCheckIn,
       checkOut: parsedCheckOut,
+      status: 'booked',
       totalAmount,
       createdBy: 'admin',
       userId: user._id
@@ -516,6 +524,7 @@ exports.bookRoom = async (req) => {
       bookingId: booking._id,
       amount: totalAmount,
       mode: paymentMode,
+      status: 'paid',
       method: paymentMethod,
       bookingType: 'room'
     });
@@ -545,7 +554,7 @@ exports.bookRoom = async (req) => {
 exports.updateBookingPayment = async (req) => {
   try {
     const { bookingId } = req.params;
-    const { paymentStatus } = req.body;
+    const { paymentStatus = "paid" } = req.body;
 
     if (!['paid', 'pending', 'failed'].includes(paymentStatus)) {
       return { status: false, message: 'Invalid payment status' };

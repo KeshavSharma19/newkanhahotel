@@ -59,6 +59,8 @@ exports.updateCategory = async (req) => {
     const { id } = req.params;
     const { name, description } = req.body;
 
+    console.log('Service - updateCategory:', req.body);
+
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return { status: false, message: 'Invalid category ID' };
     }

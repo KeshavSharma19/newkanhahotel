@@ -10,6 +10,8 @@ exports.createBooking = async (req) => {
       tableNumber, specialRequest, preOrderedItems, tableId, paymentMode = 'offline', paymentMethod 
 
     } = req.body;
+    const adminId = req.adminId;
+
 
     if (!guestName || !phone || !date || !timeSlot || !numberOfGuests) {
       return { status: false, message: 'Required fields missing' };
@@ -33,7 +35,7 @@ exports.createBooking = async (req) => {
     const booking = await TableBooking.create({
       tableId,
       guestName,
-      userId,
+      adminId,
       phone,
       date,
       timeSlot,

@@ -1,3 +1,4 @@
+
 const Booking = require('../../models/roomBooking');
 const Room = require('../../models/roomModel');
 const Banquet = require('../../models/banquetModel');
@@ -24,7 +25,7 @@ exports.bookRoom = async (req) => {
             paymentMethod = 'razorpay_gateway',
         } = req.body;
 
-        if (!guestName || !phone || !checkIn || !checkOut || !totalAmount || !paymentMethod) {
+        if (!guestName || !phone || !checkIn || !checkOut  || !paymentMethod) {
             return { status: false, message: 'All booking and payment details are required' };
         }
 

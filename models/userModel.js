@@ -13,11 +13,12 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
+      default: '',
       // required: true,
       unique: true,
       lowercase: true,
       trim: true,
-      sparse: true,
+      sparse: true // Allows multiple users with no email,
     },
 
     phone: {

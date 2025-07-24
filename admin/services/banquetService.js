@@ -53,13 +53,13 @@ exports.addBanquet = async (req) => {
 exports.listBanquets = async () => {
   try {
     const banquets = await BANQUET.find()
-      .select('-createdAt -updatedAt') 
+      .select('-createdAt -updatedAt')
       .sort({ createdAt: -1 });
 
-    return { 
-      status: true, 
-      message: 'Banquets fetched successfully', 
-      data: banquets 
+    return {
+      status: true,
+      message: 'Banquets fetched successfully',
+      data: banquets
     };
   } catch (error) {
     console.error('Service Error - listBanquets:', error);
@@ -150,7 +150,8 @@ exports.bookBanquet = async (req) => {
       totalAmount,
       paymentMode = 'offline',
       paymentMethod,
-      startTime
+      startTime,
+      email
     } = req.body;
 
     if (!guestName || !phone || !eventDate || !slot || !endTime || !totalAmount || !paymentMethod) {
@@ -164,13 +165,17 @@ exports.bookBanquet = async (req) => {
 
     let user = await USER.findOne({ phone });
     if (!user) {
-      user = await USER.create({
-        name: guestName,
+      const newUser = {
+        firstname: guestName,
+        lastname: '', // optional but prevents schema mismatch
         phone,
-        email: null, 
+        email,
         password: ''
-      });
+      };
+
+      user = await USER.create(newUser);
     }
+
 
     const booking = await BANQUETBOOKING.create({
       hallId: hallId,
@@ -178,10 +183,11 @@ exports.bookBanquet = async (req) => {
       phone,
       eventDate,
       slot,
-      endTime, 
+      endTime,
       startTime,
       totalAmount,
       createdBy: 'admin',
+      status: 'booked',
       userId: user._id
     });
 
@@ -190,11 +196,12 @@ exports.bookBanquet = async (req) => {
       amount: totalAmount,
       mode: paymentMode,
       method: paymentMethod,
+      status: 'paid',
       bookingType: 'banquet'
     });
 
     booking.paymentId = payment._id;
-    await booking.save();
+    await booking.save(); 
 
     return {
       status: true,
