@@ -9,6 +9,8 @@ const razorpay = require('../../utils/razorpay');
 const RoomBooking = require('../../models/roomBooking');
 const BanquetBooking = require('../../models/banquetBooking');
 const TableBooking = require('../../models/tableBooking');
+const RoomsType = require("../../models/roomTypeModel")
+
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
@@ -20,7 +22,6 @@ exports.bookRoom = async (req) => {
             phone,
             checkIn,
             checkOut,
-            totalAmount,
             paymentMode = 'online',
             paymentMethod = 'razorpay_gateway',
         } = req.body;
@@ -39,6 +40,12 @@ exports.bookRoom = async (req) => {
         if (parsedCheckOut <= parsedCheckIn) {
             return { status: false, message: 'Check-out must be after check-in' };
         }
+         const roomsType = await RoomsType.find({ _id: roomTypeId, isAvailable: true });
+
+
+         console.log('Available Room Types:', roomsType[0]?.price);
+
+        //  vfvvv
 
         // Step 1: Find all rooms of the given roomType
         const rooms = await Room.find({ roomTypeId, isAvailable: true });
@@ -86,7 +93,7 @@ exports.bookRoom = async (req) => {
             phone,
             checkIn: parsedCheckIn,
             checkOut: parsedCheckOut,
-            totalAmount,
+            totalAmount: roomsType[0]?.price,
             createdBy: 'guest',
             userId: user._id,
             status: 'pending'
@@ -96,7 +103,7 @@ exports.bookRoom = async (req) => {
         let razorpayOrder = null;
         if (paymentMode === 'online') {
             const orderOptions = {
-                amount: totalAmount * 100, // in paisa
+                amount: roomsType[0]?.price * 100, // in paisa
                 currency: 'INR',
                 receipt: `booking_${booking._id}`,
                 notes: {
@@ -111,7 +118,7 @@ exports.bookRoom = async (req) => {
         // Step 6: Create Payment record
         const payment = await Payment.create({
             bookingId: booking._id,
-            amount: totalAmount,
+            amount: roomsType[0]?.price,
             mode: paymentMode,
             method: paymentMethod,
             transactionId: razorpayOrder?.id || null,
