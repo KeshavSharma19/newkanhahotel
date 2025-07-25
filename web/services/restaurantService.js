@@ -1,4 +1,44 @@
 const Table = require('../../models/tableModel');
+const Category = require('../../models/category');
+const MenuItem = require('../../models/menuItem');
+
+exports.getFullMenuForUser = async (req) => {
+  try {
+    // Step 1: Get all active categories
+    const categories = await Category.find({ isActive: true });
+
+    // Step 2: For each category, fetch its available items
+    const menuData = await Promise.all(
+      categories.map(async (category) => {
+        const items = await MenuItem.find({
+          categoryId: category._id,
+          isAvailable: true
+        }).select('name description price'); // Exclude image field
+
+        return {
+          _id: category._id,
+          name: category.name,
+          description: category.description,
+          items
+        };
+      })
+    );
+
+    return {
+      status: true,
+      message: 'Menu fetched successfully',
+      data: menuData
+    };
+  } catch (error) {
+    console.error('Service Error - getFullMenuForUser:', error);
+    return {
+      status: false,
+      message: 'Failed to fetch menu',
+      error: error.message
+    };
+  }
+};
+
 
 exports.viewTableList = async (req) => {
   try {

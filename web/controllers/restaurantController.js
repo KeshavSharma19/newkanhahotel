@@ -9,3 +9,13 @@ exports.viewTableList = async (req, res) => {
     res.status(500).json({ status: false, message: 'Internal server error.' });
   }
 };
+
+exports.getFullMenuForUser = async (req, res) => {
+  try {
+    const result = await restaurantService.getFullMenuForUser(req);
+    res.status(result.status ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ status: false, message: 'Internal server error.' });
+  }
+};
