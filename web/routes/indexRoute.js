@@ -9,7 +9,7 @@ const restaurantRoutes = require('../routes/restaurant.route');
 
 router.use('/auth', authRoutes);
 router.use('/rooms', roomRoutes);
-// router.use('/banquets', banquetRoutes);
+router.use('/banquet', banquetRoutes);
 // router.use('/restaurants', restaurantRoutes);
 router.use('/bookings', bookingRoutes);
 
