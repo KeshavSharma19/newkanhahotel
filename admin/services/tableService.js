@@ -3,6 +3,7 @@ const Table = require('../../models/tableModel');
 exports.createTable = async (req) => {
   try {
     const { tableNumber, capacity, description } = req.body;
+    const type = req.query.type; // e.g., 'table'
 
     if (!tableNumber || !capacity) {
       return { status: false, message: 'Table number and capacity are required' };
@@ -13,10 +14,16 @@ exports.createTable = async (req) => {
       return { status: false, message: 'Table with this number already exists' };
     }
 
+    // Store image paths as 'type/filename'
+    const images = req.files?.map(file => {
+      return type ? `/${type}/${file.filename}` : file.filename;
+    }) || [];
+
     const table = await Table.create({
       tableNumber,
       capacity,
-      description
+      description,
+      images
     });
 
     return { status: true, message: 'Table created successfully', data: table };
@@ -26,15 +33,35 @@ exports.createTable = async (req) => {
   }
 };
 
+
 exports.getAllTables = async () => {
   try {
+    const baseUrl = process.env.BASE_URL;
+
     const tables = await Table.find();
-    return { status: true, message: 'Tables fetched successfully', data: tables };
+
+    const formattedTables = tables.map(table => {
+      return {
+        ...table._doc,
+        images: table.images?.map(img => baseUrl + img) || []
+      };
+    });
+
+    return {
+      status: true,
+      message: 'Tables fetched successfully',
+      data: formattedTables
+    };
   } catch (error) {
     console.error('Service Error - getAllTables:', error);
-    return { status: false, message: 'Failed to fetch tables', error: error.message };
+    return {
+      status: false,
+      message: 'Failed to fetch tables',
+      error: error.message
+    };
   }
 };
+
 
 exports.getTableById = async (req) => {
   try {
@@ -53,16 +80,40 @@ exports.getTableById = async (req) => {
 exports.updateTable = async (req) => {
   try {
     const { id } = req.params;
-    const updated = await Table.findByIdAndUpdate(id, req.body, { new: true });
-    if (!updated) {
-      return { status: false, message: 'Table not found or update failed' };
+    const type = req.query.type; // e.g., 'table'
+
+    const existing = await Table.findById(id);
+    if (!existing) {
+      return { status: false, message: 'Table not found' };
     }
-    return { status: true, message: 'Table updated successfully', data: updated };
+
+    // Prepend type to new image filenames
+    const newImages = req.files?.map(file =>
+      type ? `${type}/${file.filename}` : file.filename
+    ) || [];
+
+    const updatedData = {
+      ...req.body,
+      images: [...existing.images, ...newImages]
+    };
+
+    const updated = await Table.findByIdAndUpdate(id, updatedData, { new: true });
+
+    return {
+      status: true,
+      message: 'Table updated successfully',
+      data: updated
+    };
   } catch (error) {
     console.error('Service Error - updateTable:', error);
-    return { status: false, message: 'Failed to update table', error: error.message };
+    return {
+      status: false,
+      message: 'Failed to update table',
+      error: error.message
+    };
   }
 };
+
 
 exports.deleteTable = async (req) => {
   try {
