@@ -20,6 +20,16 @@ exports.bookBanquet = async (req, res) => {
   }
 };
 
+exports.bookTable = async (req, res) => {
+  try {
+    const result = await bookingService.bookTable(req);
+    res.status(result.status ? 200 : 400).json(result);
+  } catch (error) {
+    console.error('bookTable error:', error);
+    res.status(500).json({ status: false, message: 'Server error while booking room' });
+  }
+};
+
 exports.razorpayWebhook = async (req, res) => {
   try {
     const result = await bookingService.razorpayWebhook(req);
