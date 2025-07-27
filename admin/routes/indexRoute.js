@@ -11,6 +11,8 @@ const menuItemRoutes = require('../routes/menuItemRoutes');
 const bookingRoutes = require('../routes/tablebookingRoutes');
 const tableRoutes = require('../routes/tableRoutes');
 const tableBookingRoutes = require('../routes/tablebookingRoutes');
+const enquiryRoutes = require('../routes/enquiryRoute');
+
 router.use('/admin', adminRoutes);
 router.use('/rooms', roomRoutes);
 router.use('/users', userRoutes);
@@ -21,9 +23,7 @@ router.use('/menu', menuItemRoutes);
 // done
 router.use('/tables', tableRoutes);
 router.use('/table-booking', tableBookingRoutes);
-
-// inquiry form
-
+router.use('/enquiry', enquiryRoutes);
 // ✅ Test route
 router.get('/test', (req, res) => {
   res.status(200).json({ message: '✅ Test route working!' });
