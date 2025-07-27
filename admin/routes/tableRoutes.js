@@ -1,15 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const tableController = require('../controllers/tableController');
+const upload = require('../../utils/multer');
 
-router.post('/create', tableController.createTable);
+router.post('/create', upload.array('images'), tableController.createTable);
 
 router.get('/list', tableController.getAllTables);
 
 router.get('/details/:id', tableController.getTableById);
 
-router.put('/update/:id', tableController.updateTable);
+router.post('/update/:id', upload.array('images'), tableController.updateTable);
 
-router.delete('/delete/:id', tableController.deleteTable);
+router.post('/delete/:id', tableController.deleteTable);
 
 module.exports = router;

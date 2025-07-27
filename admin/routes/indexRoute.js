@@ -18,9 +18,11 @@ router.use('/banquet', banquetRoutes);
 router.use('/gallery', galleryRoutes);
 router.use('/category', categoryRoutes);
 router.use('/menu', menuItemRoutes);
-router.use('/bookings', bookingRoutes);
+// done
 router.use('/tables', tableRoutes);
 router.use('/table-booking', tableBookingRoutes);
+
+// inquiry form
 
 // ✅ Test route
 router.get('/test', (req, res) => {

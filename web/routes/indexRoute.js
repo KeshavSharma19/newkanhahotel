@@ -6,11 +6,14 @@ const roomRoutes = require('../routes/room.routes');
 const bookingRoutes = require('../routes/booking.routes');
 const banquetRoutes = require('../routes/banquet.route'); 
 const restaurantRoutes = require('../routes/restaurant.route');
+const contactRoute = require("../routes/contact.route");
 
 router.use('/auth', authRoutes);
 router.use('/rooms', roomRoutes);
-// router.use('/banquets', banquetRoutes);
-// router.use('/restaurants', restaurantRoutes);
+// pending 
 router.use('/bookings', bookingRoutes);
+router.use('/banquet', banquetRoutes);
+router.use('/restaurants', restaurantRoutes);
+router.use('/contact', contactRoute);
 
 module.exports = router;
