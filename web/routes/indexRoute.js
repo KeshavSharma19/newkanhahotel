@@ -11,9 +11,9 @@ const contactRoute = require("../routes/contact.route");
 router.use('/auth', authRoutes);
 router.use('/rooms', roomRoutes);
 // pending 
-router.use('/bookings', bookingRoutes);
 router.use('/banquet', banquetRoutes);
 router.use('/restaurants', restaurantRoutes);
+router.use('/bookings', bookingRoutes);
 router.use('/contact', contactRoute);
 
 module.exports = router;

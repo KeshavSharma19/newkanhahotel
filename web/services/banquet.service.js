@@ -34,3 +34,27 @@ exports.viewBanquetList = async (req) => {
     };
   }
 };
+
+
+exports.BanquetTypeById = async (id) => {
+  try {
+    const room = await Banquet.findById(id, { createdAt: 0, updatedAt: 0 });
+    if (!room) {
+      return {
+        status: false,
+        message: 'Banquet not found'
+      };
+    }
+    return {
+      status: true,
+      message: 'Banquet fetched successfully',
+      data: room
+    };
+  } catch (error) {
+    console.error('Service Error - getRoomById:', error);
+    return {
+      status: false,
+      message: 'Failed to fetch room'
+    };
+  }
+};
