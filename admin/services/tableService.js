@@ -3,6 +3,7 @@ const Table = require('../../models/tableModel');
 exports.createTable = async (req) => {
   try {
     const { tableNumber, capacity, description } = req.body;
+    // "t1" , "4" , "Cozy table for 4 guests"
     const type = req.query.type; // e.g., 'table'
 
     if (!tableNumber || !capacity) {

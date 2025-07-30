@@ -11,7 +11,7 @@ const { verifyToken } = require('../middlewares/auth.middleware');
 
 router.get('/view-room-types', getAllRoomTypes);
 router.get('/room-types/:id', getRoomTypeById);
-router.get('/getallrooms', getAllRoom);
-router.get('/:id', getRoomById);
+// router.get('/getallrooms', getAllRoom);
+// router.get('/:id', getRoomById);
 
 module.exports = router;

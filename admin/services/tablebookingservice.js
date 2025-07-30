@@ -138,7 +138,9 @@ exports.getAllBookings = async () => {
   }
 };
 
-exports.updateBookingStatus = async (id, status) => {
+exports.updateBookingStatus = async (req) => {
+  const { id } = req.params;
+  const { status } = req.body;
   try {
     const updated = await TableBooking.findByIdAndUpdate(id, { status }, { new: true });
 

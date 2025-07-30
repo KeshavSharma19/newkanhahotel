@@ -9,8 +9,8 @@ router.get('/list', tableController.getAllTables);
 
 router.get('/details/:id', tableController.getTableById);
 
-router.put('/update/:id', upload.array('images'), tableController.updateTable);
+router.post('/update/:id', upload.array('images'), tableController.updateTable);
 
-router.delete('/delete/:id', tableController.deleteTable);
+router.post('/delete/:id', tableController.deleteTable);
 
 module.exports = router;
