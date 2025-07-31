@@ -18,7 +18,7 @@ connectDB();
 const routes = require('./routes/indexRoute');
 app.use('/', routes);
 
-const PORT = process.env.ADMIN_PORT || 5000;
+const PORT = 5500;
 app.listen(PORT, () => {
   console.log(`🚀 Admin server running on port ${PORT}`);
 });
