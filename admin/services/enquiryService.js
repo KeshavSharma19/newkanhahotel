@@ -20,6 +20,8 @@ exports.updateEnquiryStatus = async (req) => {
         const { id } = req.params;
         const { status } = req.body;
 
+        console.log('Updating enquiry status:', { id, status });
+
         if (!['new', 'responded', 'closed'].includes(status)) {
             return { status: false, message: 'Invalid status value' };
         }

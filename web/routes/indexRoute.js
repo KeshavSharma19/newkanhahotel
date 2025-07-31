@@ -11,11 +11,11 @@ const blogRoute = require("../routes/blog.route");
 
 router.use('/auth', authRoutes);
 router.use('/rooms', roomRoutes);
-// pending 
 router.use('/banquet', banquetRoutes);
 router.use('/restaurants', restaurantRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/contact', contactRoute);
+// pending 
 router.use('/blog', blogRoute);
 
 module.exports = router;

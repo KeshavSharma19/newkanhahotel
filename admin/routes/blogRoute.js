@@ -7,6 +7,6 @@ const auth = require('../middlewares/auth');
 router.post('/add-blog', auth, upload.single('thumbnail'), blogController.createBlog);
 router.get('/list-blogs', blogController.getAllBlogs);
 router.post('/update-blog/:id', auth, upload.single('thumbnail'), blogController.updateBlog);
-router.delete('/delete-blog/:id', auth, blogController.deleteBlog);
+router.post('/delete-blog/:id', auth, blogController.deleteBlog);
 
 module.exports = router;
