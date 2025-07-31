@@ -21,11 +21,11 @@ router.use('/banquet', banquetRoutes);
 router.use('/gallery', galleryRoutes);
 router.use('/category', categoryRoutes);
 router.use('/menu', menuItemRoutes);
-// done
 router.use('/tables', tableRoutes);
 router.use('/table-booking', tableBookingRoutes);
 router.use('/enquiry', enquiryRoutes);
 router.use('/blog', blogRoutes);
+// done
 
 // ✅ Test route
 router.get('/test', (req, res) => {
