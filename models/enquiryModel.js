@@ -10,7 +10,9 @@ const enquirySchema = new mongoose.Schema({
     type: String,
     enum: ['new', 'responded', 'closed'],
     default: 'new'
-  }
+  },
+  typeOfEvent: { type: String },
+  guest: { type: Number, default: 0 }
 }, {
   timestamps: true,
   versionKey: false

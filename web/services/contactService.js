@@ -3,7 +3,7 @@ const Enquiry = require('../../models/enquiryModel');
 
 exports.submitEnquiry = async (req) => {
   try {
-    const { name, email, phone, subject, message } = req.body;
+    const { name, email, phone, subject, message, typeOfEvent, guest } = req.body;
 
     if (!name || !email || !phone || !message) {
       return { status: false, message: 'Name, email, phone and message are required' };
@@ -14,7 +14,9 @@ exports.submitEnquiry = async (req) => {
       email,
       phone,
       subject,
-      message
+      message,
+      typeOfEvent,
+      guest
     });
 
     return {
