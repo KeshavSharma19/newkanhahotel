@@ -6,6 +6,8 @@ exports.viewBanquetList = async (req) => {
       .select('-__v')
       .sort({ createdAt: -1 });
 
+      console.log("banquetList",banquetList);
+
     const formattedList = banquetList.map((banquet) => ({
       _id: banquet._id,
       name: banquet.name,
