@@ -13,7 +13,7 @@ exports.viewBanquetList = async (req) => {
       name: banquet.name,
       capacity: banquet.capacity,
       description: banquet.description,
-      price: banquet.price,
+      pricePerHour: banquet.pricePerHour,
       images: banquet.images?.map(img => `${process.env.BASE_URL || ''}/${img}`) || [],
       isAvailable: banquet.isAvailable,
       createdAt: banquet.createdAt,
