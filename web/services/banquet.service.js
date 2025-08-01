@@ -19,6 +19,8 @@ exports.viewBanquetList = async (req) => {
       amenities: banquet.amenities || []
     }));
 
+    console.log("hfh", formattedList);
+
     return {
       status: true,
       message: 'Banquet halls fetched successfully',
