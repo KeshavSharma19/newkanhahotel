@@ -96,7 +96,7 @@ exports.updateBanquet = async (req) => {
     }
 
     if (files.length > 0) {
-      banquet.images = files.map(file => `/images/banquets/${file.filename}`);
+      banquet.images = files.map(file => `/images/banquet/${file.filename}`);
     }
 
     await banquet.save();
