@@ -8,6 +8,7 @@ const banquetRoutes = require('../routes/banquet.route');
 const restaurantRoutes = require('../routes/restaurant.route');
 const contactRoute = require("../routes/contact.route");
 const blogRoute = require("../routes/blog.route");
+const galleryRoute = require("../routes/gallery.route.js");
 
 router.use('/auth', authRoutes);
 router.use('/rooms', roomRoutes);
@@ -17,5 +18,6 @@ router.use('/bookings', bookingRoutes);
 router.use('/contact', contactRoute);
 // pending 
 router.use('/blog', blogRoute);
+router.use('/gallery', galleryRoute);
 
 module.exports = router;
