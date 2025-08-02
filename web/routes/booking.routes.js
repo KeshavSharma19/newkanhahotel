@@ -5,7 +5,7 @@ const { verifyToken } = require('../middlewares/auth.middleware');
 
 router.post('/room-booking/:roomTypeId', verifyToken , bookingController.bookRoom);
 // pending 
-router.post('/banquet-booking', verifyToken , bookingController.bookBanquet);
+router.post('/banquet-booking/:id', verifyToken , bookingController.bookBanquet);
 // pending
 router.post('/table-booking', verifyToken , bookingController.bookTable);
 // pending
