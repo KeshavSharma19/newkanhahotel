@@ -122,18 +122,15 @@ exports.loginStudentWithMobile = async (req) => {
     const { mobileNumber, countryCode = "+91" } = req.body;
 
     if (!mobileNumber) {
-        // return res.status(400).json({ msg: "Mobile number is required" });
         return { status: false, message: 'Mobile number is required' };
-
     }
 
     try {
-        const otp =
-            process.env.OTPENV === "LOCAL"
-                ? "123456"
-                : crypto.randomInt(100000, 999999).toString();
+        const otp = process.env.OTPENV === "LOCAL"
+            ? "123456"
+            : crypto.randomInt(100000, 999999).toString();
 
-        const fullPhoneNumber = `${countryCode}${mobileNumber}`;
+        const fullPhoneNumber = `${countryCode.replace('+', '')}${mobileNumber}`;
 
         let user = await User.findOne({ phone: mobileNumber });
 
@@ -148,20 +145,39 @@ exports.loginStudentWithMobile = async (req) => {
         }
 
         await user.save();
+
+        // 🔥 Send OTP via MSG91
+        if (process.env.OTPENV !== "LOCAL") {
+            const msg91Response = await axios.post(
+                'https://control.msg91.com/api/v5/otp',
+                {
+                    template_id: process.env.YOUR_MSG91_TEMPLATE_ID, // Replace this with your actual template ID
+                    mobile: fullPhoneNumber,
+                    authkey: process.env.MSG91_AUTH_KEY, // keep this in your .env
+                    otp,
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                }
+            );
+
+            console.log('MSG91 Response:', msg91Response.data);
+        }
+
         return {
             status: true,
             message: 'OTP sent successfully',
             phone: mobileNumber,
-
         };
 
     } catch (err) {
         console.error("Login Error:", err);
-        // res.status(500).json({ msg: "Server error" });
         return { status: false, message: 'Server error' };
-
     }
 };
+
 
 exports.mobileVerifyOtp = async (req) => {
     const { phone, otp } = req.body;
