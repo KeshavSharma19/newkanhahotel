@@ -488,7 +488,7 @@ exports.razorpayWebhook = async (req) => {
   console.log('Razorpay Webhook Received:', req.body);
   console.log('Razorpay Webhook Entity:', req.body.payload?.payment?.entity);
   const event = req.body.event;
-  const transactionId = req.body.payload?.payment?.entity?.id;
+  const transactionId = req.body.payload?.payment?.entity?.order_id;
 
   try {
     const payment = await Payment.findOne({ transactionId });
