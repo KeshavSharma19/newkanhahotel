@@ -24,6 +24,10 @@ const banquetSchema = new mongoose.Schema({
   images: {
     type: [String],
     default: []
+  },
+  isAvailable: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true,
