@@ -415,7 +415,7 @@ exports.getUserBookings = async (req) => {
     const userId = req.user.id;
 
     const roomBookings = await Booking.aggregate([
-      { $match: { userId: mongoose.Types.ObjectId(userId) } },
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
       {
         $lookup: {
           from: 'rooms',
@@ -468,8 +468,6 @@ exports.getUserBookings = async (req) => {
     return { status: false, message: 'Failed to retrieve bookings', error: error.message };
   }
 };
-
-
 
 exports.cancelBooking = async (req) => {
   try {
