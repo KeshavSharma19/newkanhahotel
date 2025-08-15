@@ -418,29 +418,22 @@ exports.getUserBookings = async (req) => {
       { $match: { userId: mongoose.Types.ObjectId(userId) } },
       {
         $lookup: {
-          from: 'rooms', // collection name of Room model
+          from: 'rooms',
           localField: 'roomId',
           foreignField: '_id',
           as: 'roomId'
         }
       },
-      {
-        $unwind: {
-          path: '$roomId',
-          preserveNullAndEmptyArrays: true // in case some bookings have no room assigned
-        }
-      },
+      { $unwind: { path: '$roomId', preserveNullAndEmptyArrays: true } },
       {
         $lookup: {
-          from: 'roomtypes', // collection name of RoomsType model
+          from: 'roomtypes',
           localField: 'roomId.roomTypeId',
           foreignField: '_id',
           as: 'roomType'
         }
       },
-      {
-        $unwind: "$roomType"
-      },
+      { $unwind: { path: '$roomType', preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
           "roomId.roomTypeId": "$roomType.title",
@@ -451,9 +444,8 @@ exports.getUserBookings = async (req) => {
     const banquetBookings = await BanquetBooking.find({ userId }).populate('hallId');
 
     const formattedRoomBookings = roomBookings.map(b => ({
-      ...b.toObject(),
+      ...b,
       bookingType: 'room',
-      // roomTypeId: b.roomId.roomTypeId
     }));
 
     const formattedBanquetBookings = banquetBookings.map(b => ({
@@ -461,10 +453,8 @@ exports.getUserBookings = async (req) => {
       bookingType: 'banquet'
     }));
 
-    // Merge both arrays
     const allBookings = [...formattedRoomBookings, ...formattedBanquetBookings];
 
-    // Sort by createdAt descending (latest first)
     allBookings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return {
@@ -475,9 +465,10 @@ exports.getUserBookings = async (req) => {
 
   } catch (error) {
     console.error('Service Error - getUserBookings:', error);
-    return { status: false, message: 'Failed to retrieve bookings' };
+    return { status: false, message: 'Failed to retrieve bookings', error: error.message };
   }
 };
+
 
 
 exports.cancelBooking = async (req) => {
