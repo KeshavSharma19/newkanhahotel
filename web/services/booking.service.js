@@ -493,7 +493,7 @@ exports.razorpayWebhook = async (req) => {
   try {
     const payment = await Payment.findOne({ transactionId });
 
-    console.log('Payment found:', payment);
+    // console.log('Payment found:', payment);
     if (!payment) {
       return { status: false, message: 'Payment not found' };
     }
@@ -519,7 +519,7 @@ exports.razorpayWebhook = async (req) => {
     };
 
     if (event === 'payment.captured') {
-      console.log('Payment captured for booking:', bookingType, bookingId);
+      // console.log('Payment captured for booking:', bookingType, bookingId);
       payment.status = 'paid';
       payment.paidAt = new Date();
       await payment.save();
@@ -533,7 +533,7 @@ exports.razorpayWebhook = async (req) => {
     }
 
     if (event === 'payment.failed') {
-      console.log('Payment failed for booking:', bookingType, bookingId);
+      // console.log('Payment failed for booking:', bookingType, bookingId);
       payment.status = 'failed';
       await payment.save();
 
