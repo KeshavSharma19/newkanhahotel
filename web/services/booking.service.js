@@ -178,7 +178,7 @@ exports.bookBanquet = async (req) => {
     }
 
     // Step 1: Get the selected banquet hall
-    const allHalls = await Banquet.find({ _id: mongoose.Types.ObjectId(req.params.id), isAvailable: true });
+    const allHalls = await Banquet.find({ _id: new mongoose.Types.ObjectId(req.params.id), isAvailable: true });
     if (!allHalls.length) {
       return { status: false, message: 'No banquet halls available in the system' };
     }
