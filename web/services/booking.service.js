@@ -471,19 +471,19 @@ exports.cancelBooking = async (req) => {
 
 
 exports.razorpayWebhook = async (req) => {
-  const secret = process.env.RAZORPAY_WEBHOOK_KEY_SECRET;
+  // const secret = process.env.RAZORPAY_WEBHOOK_KEY_SECRET;
 
-  const signature = req.headers['x-razorpay-signature'];
-  const body = JSON.stringify(req.body);
+  // const signature = req.headers['x-razorpay-signature'];
+  // const body = JSON.stringify(req.body);
 
-  const expectedSignature = crypto.createHmac('sha256', secret)
-    .update(body)
-    .digest('hex');
+  // const expectedSignature = crypto.createHmac('sha256', secret)
+  //   .update(body)
+  //   .digest('hex');
 
-  if (signature !== expectedSignature) {
-    console.warn('Invalid Razorpay webhook signature');
-    return { status: false, message: 'Invalid signature' };
-  }
+  // if (signature !== expectedSignature) {
+  //   console.warn('Invalid Razorpay webhook signature');
+  //   return { status: false, message: 'Invalid signature' };
+  // }
 
   const event = req.body.event;
   const transactionId = req.body.payload?.payment?.entity?.id;
