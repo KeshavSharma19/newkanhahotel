@@ -168,7 +168,7 @@ exports.bookBanquet = async (req) => {
       paymentMethod = 'razorpay_gateway',
     } = req.body;
 
-    if (!guestName || !phone || !eventDate || !startTime || !endTime || !paymentMethod) {
+    if (!guestName || !phone || !eventDate || !startTime || !endTime ) {
       return { status: false, message: 'All booking and payment details are required' };
     }
 
