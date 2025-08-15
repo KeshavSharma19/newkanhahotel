@@ -471,7 +471,7 @@ exports.cancelBooking = async (req) => {
 
 
 exports.razorpayWebhook = async (req) => {
-  const secret = process.env.RAZORPAY_KEY_SECRET;
+  const secret = process.env.RAZORPAY_WEBHOOK_KEY_SECRET;
 
   const signature = req.headers['x-razorpay-signature'];
   const body = JSON.stringify(req.body);
