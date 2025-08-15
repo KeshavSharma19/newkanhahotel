@@ -168,8 +168,12 @@ exports.bookBanquet = async (req) => {
       paymentMethod = 'razorpay_gateway',
     } = req.body;
 
-    if (!guestName || !phone || !eventDate || !startTime || !endTime ) {
+    if (!guestName || !phone || !eventDate || !startTime || !endTime) {
       return { status: false, message: 'All booking and payment details are required' };
+    }
+
+    if (endTime <= startTime) {
+      return { status: false, message: 'End time must be after start time' };
     }
 
     const parsedEventDate = new Date(eventDate);
