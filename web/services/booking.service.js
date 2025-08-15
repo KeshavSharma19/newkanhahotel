@@ -15,136 +15,136 @@ const mongoose = require('mongoose');
 const crypto = require('crypto');
 
 exports.bookRoom = async (req) => {
-    try {
-        const { roomTypeId } = req.params;
-        const {
-            guestName,
-            phone,
-            checkIn,
-            checkOut,
-            paymentMode = 'online',
-            paymentMethod = 'razorpay_gateway',
-        } = req.body;
+  try {
+    const { roomTypeId } = req.params;
+    const {
+      guestName,
+      phone,
+      checkIn,
+      checkOut,
+      paymentMode = 'online',
+      paymentMethod = 'razorpay_gateway',
+    } = req.body;
 
-        if (!guestName || !phone || !checkIn || !checkOut  || !paymentMethod) {
-            return { status: false, message: 'All booking and payment details are required' };
-        }
-
-        const parsedCheckIn = new Date(checkIn);
-        const parsedCheckOut = new Date(checkOut);
-
-        if (isNaN(parsedCheckIn.getTime()) || isNaN(parsedCheckOut.getTime())) {
-            return { status: false, message: 'Invalid check-in or check-out date format' };
-        }
-
-        if (parsedCheckOut <= parsedCheckIn) {
-            return { status: false, message: 'Check-out must be after check-in' };
-        }
-         const roomsType = await RoomsType.find({ _id: roomTypeId, isAvailable: true });
-
-
-         console.log('Available Room Types:', roomsType[0]?.price);
-
-        //  vfvvv
-
-        // Step 1: Find all rooms of the given roomType
-        const rooms = await Room.find({ roomTypeId, isAvailable: true });
-        if (!rooms || rooms.length === 0) {
-            return { status: false, message: 'No rooms available for this room type' };
-        }
-
-        // Step 2: Check availability in RoomBooking
-        let availableRoom = null;
-
-        for (const room of rooms) {
-            const overlappingBookings = await RoomBooking.find({
-                roomId: room._id,
-                $or: [
-                    { checkIn: { $lt: parsedCheckOut }, checkOut: { $gt: parsedCheckIn } }
-                ],
-                status: { $in: ['pending', 'confirmed'] }
-            });
-
-            if (overlappingBookings.length === 0) {
-                availableRoom = room;
-                break;
-            }
-        }
-
-        if (!availableRoom) {
-            return { status: false, message: 'No available rooms for the selected date/time' };
-        }
-
-        // Step 3: Create or find user
-        let user = await User.findOne({ phone });
-        if (!user) {
-            user = await User.create({
-                name: guestName,
-                phone,
-                email: '',
-                password: ''
-            });
-        }
-
-        // Step 4: Create Booking in pending status
-        const booking = await RoomBooking.create({
-            roomId: availableRoom._id,
-            guestName,
-            phone,
-            checkIn: parsedCheckIn,
-            checkOut: parsedCheckOut,
-            totalAmount: roomsType[0]?.price,
-            createdBy: 'guest',
-            userId: user._id,
-            status: 'pending'
-        });
-
-        // Step 5: Razorpay order creation
-        let razorpayOrder = null;
-        if (paymentMode === 'online') {
-            const orderOptions = {
-                amount: roomsType[0]?.price * 100, // in paisa
-                currency: 'INR',
-                receipt: `booking_${booking._id}`,
-                notes: {
-                    guestName,
-                    phone,
-                    bookingId: booking._id.toString()
-                }
-            };
-            razorpayOrder = await razorpay.orders.create(orderOptions);
-        }
-
-        // Step 6: Create Payment record
-        const payment = await Payment.create({
-            bookingId: booking._id,
-            amount: roomsType[0]?.price,
-            mode: paymentMode,
-            method: paymentMethod,
-            transactionId: razorpayOrder?.id || null,
-            bookingType: 'room'
-        });
-
-        booking.paymentId = payment._id;
-        await booking.save();
-
-        return {
-            status: true,
-            message: 'Room booking initiated successfully!',
-            data: {
-                booking,
-                payment,
-                razorpayOrder // send to frontend for Razorpay checkout
-            }
-        };
-
-    } catch (error) {
-        console.error('Service Error - bookRoom:', error);
-        return {
-            status: false,
-            message: 'Something went wrong while booking the room'
-        };
+    if (!guestName || !phone || !checkIn || !checkOut || !paymentMethod) {
+      return { status: false, message: 'All booking and payment details are required' };
     }
+
+    const parsedCheckIn = new Date(checkIn);
+    const parsedCheckOut = new Date(checkOut);
+
+    if (isNaN(parsedCheckIn.getTime()) || isNaN(parsedCheckOut.getTime())) {
+      return { status: false, message: 'Invalid check-in or check-out date format' };
+    }
+
+    if (parsedCheckOut <= parsedCheckIn) {
+      return { status: false, message: 'Check-out must be after check-in' };
+    }
+    const roomsType = await RoomsType.find({ _id: roomTypeId, isAvailable: true });
+
+
+    console.log('Available Room Types:', roomsType[0]?.price);
+
+    //  vfvvv
+
+    // Step 1: Find all rooms of the given roomType
+    const rooms = await Room.find({ roomTypeId, isAvailable: true });
+    if (!rooms || rooms.length === 0) {
+      return { status: false, message: 'No rooms available for this room type' };
+    }
+
+    // Step 2: Check availability in RoomBooking
+    let availableRoom = null;
+
+    for (const room of rooms) {
+      const overlappingBookings = await RoomBooking.find({
+        roomId: room._id,
+        $or: [
+          { checkIn: { $lt: parsedCheckOut }, checkOut: { $gt: parsedCheckIn } }
+        ],
+        status: 'booked'
+      });
+
+      if (overlappingBookings.length === 0) {
+        availableRoom = room;
+        break;
+      }
+    }
+
+    if (!availableRoom) {
+      return { status: false, message: 'No available rooms for the selected date/time' };
+    }
+
+    // Step 3: Create or find user
+    let user = await User.findOne({ phone });
+    if (!user) {
+      user = await User.create({
+        name: guestName,
+        phone,
+        email: '',
+        password: ''
+      });
+    }
+
+    // Step 4: Create Booking in pending status
+    const booking = await RoomBooking.create({
+      roomId: availableRoom._id,
+      guestName,
+      phone,
+      checkIn: parsedCheckIn,
+      checkOut: parsedCheckOut,
+      totalAmount: roomsType[0]?.price,
+      createdBy: 'guest',
+      userId: user._id,
+      status: 'pending'
+    });
+
+    // Step 5: Razorpay order creation
+    let razorpayOrder = null;
+    if (paymentMode === 'online') {
+      const orderOptions = {
+        amount: roomsType[0]?.price * 100, // in paisa
+        currency: 'INR',
+        receipt: `booking_${booking._id}`,
+        notes: {
+          guestName,
+          phone,
+          bookingId: booking._id.toString()
+        }
+      };
+      razorpayOrder = await razorpay.orders.create(orderOptions);
+    }
+
+    // Step 6: Create Payment record
+    const payment = await Payment.create({
+      bookingId: booking._id,
+      amount: roomsType[0]?.price,
+      mode: paymentMode,
+      method: paymentMethod,
+      transactionId: razorpayOrder?.id || null,
+      bookingType: 'room'
+    });
+
+    booking.paymentId = payment._id;
+    await booking.save();
+
+    return {
+      status: true,
+      message: 'Room booking initiated successfully!',
+      data: {
+        booking,
+        payment,
+        razorpayOrder // send to frontend for Razorpay checkout
+      }
+    };
+
+  } catch (error) {
+    console.error('Service Error - bookRoom:', error);
+    return {
+      status: false,
+      message: 'Something went wrong while booking the room'
+    };
+  }
 };
 
 
@@ -171,7 +171,7 @@ exports.bookBanquet = async (req) => {
     }
 
     // Step 1: Get all banquet halls
-    const allHalls = await Banquet.find({_id: mongoose.Types.ObjectId(req.params.id), isAvailable: true});
+    const allHalls = await Banquet.find({ _id: mongoose.Types.ObjectId(req.params.id), isAvailable: true });
     if (!allHalls.length) {
       return { status: false, message: 'No banquet halls available in the system' };
     }
@@ -317,53 +317,53 @@ exports.bookTable = async (req) => {
 
     let availableTable = null;
 
-for (const table of allTables) {
-  const isClashing = await TableBooking.findOne({
-    tableId: table._id,
-    date: parsedDate,
-    $or: [
-      { startTime: { $lt: endDateTime }, endTime: { $gt: startDateTime } }
-    ],
-    status: { $in: ['booked', 'confirmed'] }
-  });
+    for (const table of allTables) {
+      const isClashing = await TableBooking.findOne({
+        tableId: table._id,
+        date: parsedDate,
+        $or: [
+          { startTime: { $lt: endDateTime }, endTime: { $gt: startDateTime } }
+        ],
+        status: { $in: ['booked', 'confirmed'] }
+      });
 
-  if (!isClashing) {
-    availableTable = table;
-    break;
-  }
-}
+      if (!isClashing) {
+        availableTable = table;
+        break;
+      }
+    }
 
-if (!availableTable) {
-  return { status: false, message: 'No table available for the selected time slot' };
-}
+    if (!availableTable) {
+      return { status: false, message: 'No table available for the selected time slot' };
+    }
 
-// 3. Find or create user
-let user = await User.findOne({ phone });
-if (!user) {
-  user = await User.create({
-    name: guestName,
-    phone,
-    email: '',
-    password: ''
-  });
-}
+    // 3. Find or create user
+    let user = await User.findOne({ phone });
+    if (!user) {
+      user = await User.create({
+        name: guestName,
+        phone,
+        email: '',
+        password: ''
+      });
+    }
 
-// 4. Create booking in 'pending' status
-const booking = await TableBooking.create({
-  guestName,
-  phone,
-  date: parsedDate,
-  startTime: startDateTime,
-  endTime: endDateTime,
-  numberOfGuests,
-  tableId: availableTable._id,
-  specialRequest,
-  preOrderedItems,
-  totalAmount,
-  userId: user._id,
-  status: 'pending',
-  createdBy: 'guest'
-});
+    // 4. Create booking in 'pending' status
+    const booking = await TableBooking.create({
+      guestName,
+      phone,
+      date: parsedDate,
+      startTime: startDateTime,
+      endTime: endDateTime,
+      numberOfGuests,
+      tableId: availableTable._id,
+      specialRequest,
+      preOrderedItems,
+      totalAmount,
+      userId: user._id,
+      status: 'pending',
+      createdBy: 'guest'
+    });
 
     // 5. Create Razorpay order
     let razorpayOrder = null;
@@ -414,12 +414,46 @@ exports.getUserBookings = async (req) => {
   try {
     const userId = req.user.id;
 
-    const roomBookings = await Booking.find({ userId }).populate('roomId');
+    const roomBookings = await Booking.aggregate([
+      { $match: { userId: mongoose.Types.ObjectId(userId) } },
+      {
+        $lookup: {
+          from: 'rooms', // collection name of Room model
+          localField: 'roomId',
+          foreignField: '_id',
+          as: 'roomId'
+        }
+      },
+      {
+        $unwind: {
+          path: '$roomId',
+          preserveNullAndEmptyArrays: true // in case some bookings have no room assigned
+        }
+      },
+      {
+        $lookup: {
+          from: 'roomtypes', // collection name of RoomsType model
+          localField: 'roomId.roomTypeId',
+          foreignField: '_id',
+          as: 'roomType'
+        }
+      },
+      {
+        $unwind: "$roomType"
+      },
+      {
+        $addFields: {
+          "roomId.roomTypeId": "$roomType.title",
+        }
+      }
+    ]);
+
     const banquetBookings = await BanquetBooking.find({ userId }).populate('hallId');
 
     const formattedRoomBookings = roomBookings.map(b => ({
       ...b.toObject(),
-      bookingType: 'room'
+      bookingType: 'room',
+      // roomTypeId: b.roomId.roomTypeId
     }));
 
     const formattedBanquetBookings = banquetBookings.map(b => ({
