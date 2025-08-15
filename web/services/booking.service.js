@@ -485,6 +485,7 @@ exports.razorpayWebhook = async (req) => {
   //   return { status: false, message: 'Invalid signature' };
   // }
 
+  console.log('Razorpay Webhook Received:', req.body);
   const event = req.body.event;
   const transactionId = req.body.payload?.payment?.entity?.id;
 
