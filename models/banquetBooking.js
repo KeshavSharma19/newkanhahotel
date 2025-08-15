@@ -39,6 +39,9 @@ const banquetBookingSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  numberOfHours: {
+    type: Number
+  },
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment'

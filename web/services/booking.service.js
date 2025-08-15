@@ -163,13 +163,12 @@ exports.bookBanquet = async (req) => {
       eventDate,
       startTime,
       endTime,
-      totalAmount,
       email,
       paymentMode = 'online',
       paymentMethod = 'razorpay_gateway',
     } = req.body;
 
-    if (!guestName || !phone || !eventDate || !startTime || !endTime || !totalAmount || !paymentMethod) {
+    if (!guestName || !phone || !eventDate || !startTime || !endTime || !paymentMethod) {
       return { status: false, message: 'All booking and payment details are required' };
     }
 
@@ -178,7 +177,7 @@ exports.bookBanquet = async (req) => {
       return { status: false, message: 'Invalid event date format' };
     }
 
-    // Step 1: Get all banquet halls
+    // Step 1: Get the selected banquet hall
     const allHalls = await Banquet.find({ _id: mongoose.Types.ObjectId(req.params.id), isAvailable: true });
     if (!allHalls.length) {
       return { status: false, message: 'No banquet halls available in the system' };
@@ -186,7 +185,6 @@ exports.bookBanquet = async (req) => {
 
     // Step 2: Find one available banquet hall
     let availableHall = null;
-
     for (const hall of allHalls) {
       const isClashing = await BanquetBooking.findOne({
         hallId: hall._id,
@@ -199,7 +197,7 @@ exports.bookBanquet = async (req) => {
 
       if (!isClashing) {
         availableHall = hall;
-        break; // Pick the first available hall (or remove break to collect all and pick random)
+        break;
       }
     }
 
@@ -207,7 +205,20 @@ exports.bookBanquet = async (req) => {
       return { status: false, message: 'No banquet hall available for the selected time slot' };
     }
 
-    // Step 3: Find or create user
+    // Step 3: Calculate number of hours and total amount
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+
+    const startDateTime = new Date(parsedEventDate);
+    startDateTime.setHours(startHour, startMin, 0, 0);
+
+    const endDateTime = new Date(parsedEventDate);
+    endDateTime.setHours(endHour, endMin, 0, 0);
+
+    const hoursDiff = Math.ceil((endDateTime - startDateTime) / (1000 * 60 * 60)); // in hours
+    const totalAmount = hoursDiff * availableHall.pricePerHour;
+
+    // Step 4: Find or create user
     let user = await User.findOne({ phone });
     if (!user) {
       user = await User.create({
@@ -218,7 +229,7 @@ exports.bookBanquet = async (req) => {
       });
     }
 
-    // Step 4: Create booking
+    // Step 5: Create booking
     const booking = await BanquetBooking.create({
       hallId: availableHall._id,
       guestName,
@@ -226,17 +237,18 @@ exports.bookBanquet = async (req) => {
       eventDate: parsedEventDate,
       startTime,
       endTime,
+      numberOfHours: hoursDiff,
       totalAmount,
       createdBy: 'guest',
       userId: user._id,
       status: 'pending'
     });
 
-    // Step 5: Razorpay order creation
+    // Step 6: Razorpay order creation
     let razorpayOrder = null;
     if (paymentMode === 'online') {
       const orderOptions = {
-        amount: totalAmount * 100,
+        amount: totalAmount * 100, // in paisa
         currency: 'INR',
         receipt: `banquet_booking_${booking._id}`,
         notes: {
@@ -248,7 +260,7 @@ exports.bookBanquet = async (req) => {
       razorpayOrder = await razorpay.orders.create(orderOptions);
     }
 
-    // Step 6: Create payment record
+    // Step 7: Create payment record
     const payment = await Payment.create({
       bookingId: booking._id,
       amount: totalAmount,
