@@ -438,6 +438,7 @@ exports.getUserBookings = async (req) => {
   try {
     const userId = req.user.id;
 
+    // Room bookings
     const roomBookings = await Booking.aggregate([
       { $match: { userId: new mongoose.Types.ObjectId(userId) } },
       {
@@ -460,25 +461,64 @@ exports.getUserBookings = async (req) => {
       { $unwind: { path: '$roomType', preserveNullAndEmptyArrays: true } },
       {
         $addFields: {
-          "roomId.roomTypeId": "$roomType.title",
+          "roomId.roomTypeId": "$roomType.title"
         }
       }
     ]);
 
-    const banquetBookings = await BanquetBooking.find({ userId }).populate('hallId');
+    // Banquet bookings
+    const banquetBookings = await BanquetBooking.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+      {
+        $addFields: {
+          checkIn: {
+            $dateFromString: {
+              dateString: {
+                $concat: [
+                  { $dateToString: { format: "%Y-%m-%d", date: "$eventDate" } },
+                  " ",
+                  "$startTime"
+                ]
+              }
+            }
+          },
+          checkOut: {
+            $dateFromString: {
+              dateString: {
+                $concat: [
+                  { $dateToString: { format: "%Y-%m-%d", date: "$eventDate" } },
+                  " ",
+                  "$endTime"
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "banquets",
+          localField: "hallId",
+          foreignField: "_id",
+          as: "hallId"
+        }
+      },
+      { $unwind: { path: "$hallId", preserveNullAndEmptyArrays: true } }
+    ]);
 
+    // Add bookingType field
     const formattedRoomBookings = roomBookings.map(b => ({
       ...b,
-      bookingType: 'room',
+      bookingType: 'room'
     }));
 
     const formattedBanquetBookings = banquetBookings.map(b => ({
-      ...b.toObject(),
+      ...b,
       bookingType: 'banquet'
     }));
 
+    // Merge and sort
     const allBookings = [...formattedRoomBookings, ...formattedBanquetBookings];
-
     allBookings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     return {
