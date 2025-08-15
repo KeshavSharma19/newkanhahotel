@@ -35,6 +35,9 @@ const roomBookingSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  numberOfDays: {
+    type: Number
+  },
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment'

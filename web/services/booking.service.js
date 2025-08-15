@@ -12,7 +12,6 @@ const TableBooking = require('../../models/tableBooking');
 const RoomsType = require("../../models/roomTypeModel")
 
 const mongoose = require('mongoose');
-const crypto = require('crypto');
 
 exports.bookRoom = async (req) => {
   try {
@@ -22,6 +21,7 @@ exports.bookRoom = async (req) => {
       phone,
       checkIn,
       checkOut,
+      email,
       paymentMode = 'online',
       paymentMethod = 'razorpay_gateway',
     } = req.body;
@@ -40,12 +40,14 @@ exports.bookRoom = async (req) => {
     if (parsedCheckOut <= parsedCheckIn) {
       return { status: false, message: 'Check-out must be after check-in' };
     }
-    const roomsType = await RoomsType.find({ _id: roomTypeId, isAvailable: true });
 
+    // Find room type with price
+    const roomsType = await RoomsType.findOne({ _id: roomTypeId, isAvailable: true });
+    if (!roomsType) {
+      return { status: false, message: 'Invalid or unavailable room type' };
+    }
 
-    console.log('Available Room Types:', roomsType[0]?.price);
-
-    //  vfvvv
+    console.log('Room Type Price:', roomsType.price);
 
     // Step 1: Find all rooms of the given roomType
     const rooms = await Room.find({ roomTypeId, isAvailable: true });
@@ -55,7 +57,6 @@ exports.bookRoom = async (req) => {
 
     // Step 2: Check availability in RoomBooking
     let availableRoom = null;
-
     for (const room of rooms) {
       const overlappingBookings = await RoomBooking.find({
         roomId: room._id,
@@ -75,35 +76,41 @@ exports.bookRoom = async (req) => {
       return { status: false, message: 'No available rooms for the selected date/time' };
     }
 
-    // Step 3: Create or find user
+    // Step 3: Calculate number of days & booking amount
+    const oneDayMs = 1000 * 60 * 60 * 24;
+    const numberOfDays = Math.ceil((parsedCheckOut - parsedCheckIn) / oneDayMs);
+    const totalAmount = numberOfDays * roomsType.price;
+
+    // Step 4: Create or find user
     let user = await User.findOne({ phone });
     if (!user) {
       user = await User.create({
         name: guestName,
         phone,
-        email: '',
+        email: email,
         password: ''
       });
     }
 
-    // Step 4: Create Booking in pending status
+    // Step 5: Create Booking in pending status
     const booking = await RoomBooking.create({
       roomId: availableRoom._id,
       guestName,
       phone,
       checkIn: parsedCheckIn,
       checkOut: parsedCheckOut,
-      totalAmount: roomsType[0]?.price,
+      numberOfDays,
+      totalAmount,
       createdBy: 'guest',
       userId: user._id,
       status: 'pending'
     });
 
-    // Step 5: Razorpay order creation
+    // Step 6: Razorpay order creation
     let razorpayOrder = null;
     if (paymentMode === 'online') {
       const orderOptions = {
-        amount: roomsType[0]?.price * 100, // in paisa
+        amount: totalAmount * 100, // in paisa
         currency: 'INR',
         receipt: `booking_${booking._id}`,
         notes: {
@@ -115,10 +122,10 @@ exports.bookRoom = async (req) => {
       razorpayOrder = await razorpay.orders.create(orderOptions);
     }
 
-    // Step 6: Create Payment record
+    // Step 7: Create Payment record
     const payment = await Payment.create({
       bookingId: booking._id,
-      amount: roomsType[0]?.price,
+      amount: totalAmount,
       mode: paymentMode,
       method: paymentMethod,
       transactionId: razorpayOrder?.id || null,
@@ -157,6 +164,7 @@ exports.bookBanquet = async (req) => {
       startTime,
       endTime,
       totalAmount,
+      email,
       paymentMode = 'online',
       paymentMethod = 'razorpay_gateway',
     } = req.body;
@@ -186,7 +194,7 @@ exports.bookBanquet = async (req) => {
         $or: [
           { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
         ],
-        status: { $in: ['pending', 'confirmed'] }
+        status: 'booked'
       });
 
       if (!isClashing) {
@@ -205,7 +213,7 @@ exports.bookBanquet = async (req) => {
       user = await User.create({
         name: guestName,
         phone,
-        email: '',
+        email: email,
         password: ''
       });
     }
