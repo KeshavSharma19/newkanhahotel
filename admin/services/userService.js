@@ -46,11 +46,11 @@ exports.getUserBookings = async (req) => {
     const bookings = await ROOMBOOKING.aggregate([
       {
         $match: {
-          userId: new mongoose.Types.ObjectId(userId)
+          userId: ObjectId("689ee3df547a8e67219822f3")
         }
       },
       {
-        $sort: { checkIn: -1 }
+        $sort: { createdAt: -1 }
       },
       {
         $lookup: {
@@ -93,7 +93,7 @@ exports.getUserBookings = async (req) => {
           createdAt: 1,
           room: {
             roomNumber: "$room.roomNumber",
-            roomTypeId: "$room.roomTypeId" // ✅ fixed
+            roomTypeId: "$room.roomTypeId"
           },
           payment: {
             amount: "$payment.amount",
@@ -105,36 +105,26 @@ exports.getUserBookings = async (req) => {
         }
       },
       {
-        $group: {
-          _id: "$userId",
-          rooms: { $push: "$$ROOT" }
-        }
-      },
-      {
-        $lookup: {
-          from: "banquetbookings",
-          localField: "_id",
-          foreignField: "userId",
+        $unionWith: {
+          coll: "banquetbookings",
           pipeline: [
+            {
+              $match: {
+                userId: ObjectId("689ee3df547a8e67219822f3")
+              }
+            },
             {
               $lookup: {
                 from: "banquets",
                 localField: "hallId",
                 foreignField: "_id",
                 pipeline: [
-                  {
-                    $project: {
-                      name: 1,
-                      capacity: 1
-                    }
-                  }
+                  { $project: { name: 1, capacity: 1 } }
                 ],
                 as: "banquetData"
               }
             },
-            {
-              $unwind: "$banquetData"
-            },
+            { $unwind: "$banquetData" },
             {
               $lookup: {
                 from: "payments",
@@ -148,7 +138,7 @@ exports.getUserBookings = async (req) => {
                 path: "$payment",
                 preserveNullAndEmptyArrays: true
               }
-            }, // ✅ missing comma fixed here
+            },
             {
               $project: {
                 userId: 1,
@@ -193,12 +183,13 @@ exports.getUserBookings = async (req) => {
                 }
               }
             }
-          ],
-          as: "banquets"
+          ]
         }
+      },
+      {
+        $sort: { createdAt: -1 } // ✅ final sort for merged results
       }
-    ]
-    );
+    ]);
 
     return {
       status: true,
