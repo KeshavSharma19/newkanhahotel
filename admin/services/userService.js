@@ -46,7 +46,7 @@ exports.getUserBookings = async (req) => {
     const bookings = await ROOMBOOKING.aggregate([
       {
         $match: {
-          userId: ObjectId("689ee3df547a8e67219822f3")
+          userId: new mongoose.Types.ObjectId(userId)
         }
       },
       {
@@ -110,7 +110,7 @@ exports.getUserBookings = async (req) => {
           pipeline: [
             {
               $match: {
-                userId: ObjectId("689ee3df547a8e67219822f3")
+                userId: new mongoose.Types.ObjectId(userId)
               }
             },
             {
