@@ -54,34 +54,35 @@ exports.getUserBookings = async (req) => {
       },
       {
         $lookup: {
-          from: 'rooms',
-          localField: 'roomId',
-          foreignField: '_id',
-          as: 'room'
+          from: "rooms",
+          localField: "roomId",
+          foreignField: "_id",
+          as: "room"
         }
       },
       {
         $unwind: {
-          path: '$room',
+          path: "$room",
           preserveNullAndEmptyArrays: true
         }
       },
       {
         $lookup: {
-          from: 'payments',
-          localField: 'paymentId',
-          foreignField: '_id',
-          as: 'payment'
+          from: "payments",
+          localField: "paymentId",
+          foreignField: "_id",
+          as: "payment"
         }
       },
       {
         $unwind: {
-          path: '$payment',
+          path: "$payment",
           preserveNullAndEmptyArrays: true
         }
       },
       {
         $project: {
+          userId: 1,
           guestName: 1,
           phone: 1,
           checkIn: 1,
@@ -91,19 +92,113 @@ exports.getUserBookings = async (req) => {
           createdBy: 1,
           createdAt: 1,
           room: {
-            roomNumber: '$room.roomNumber',
-            roomTypeId: '$room.roomTypeId'
+            roomNumber: "$room.roomNumber",
+            roomTypeId: "$room.roomTypeId" // ✅ fixed
           },
           payment: {
-            amount: '$payment.amount',
-            mode: '$payment.mode',
-            method: '$payment.method',
-            status: '$payment.status',
-            createdAt: '$payment.createdAt'
+            amount: "$payment.amount",
+            mode: "$payment.mode",
+            method: "$payment.method",
+            status: "$payment.status",
+            createdAt: "$payment.createdAt"
           }
         }
+      },
+      {
+        $group: {
+          _id: "$userId",
+          rooms: { $push: "$$ROOT" }
+        }
+      },
+      {
+        $lookup: {
+          from: "banquetbookings",
+          localField: "_id",
+          foreignField: "userId",
+          pipeline: [
+            {
+              $lookup: {
+                from: "banquets",
+                localField: "hallId",
+                foreignField: "_id",
+                pipeline: [
+                  {
+                    $project: {
+                      name: 1,
+                      capacity: 1
+                    }
+                  }
+                ],
+                as: "banquetData"
+              }
+            },
+            {
+              $unwind: "$banquetData"
+            },
+            {
+              $lookup: {
+                from: "payments",
+                localField: "paymentId",
+                foreignField: "_id",
+                as: "payment"
+              }
+            },
+            {
+              $unwind: {
+                path: "$payment",
+                preserveNullAndEmptyArrays: true
+              }
+            }, // ✅ missing comma fixed here
+            {
+              $project: {
+                userId: 1,
+                guestName: 1,
+                phone: 1,
+                checkIn: {
+                  $dateFromString: {
+                    dateString: {
+                      $concat: [
+                        { $dateToString: { format: "%Y-%m-%d", date: "$eventDate" } },
+                        " ",
+                        "$startTime"
+                      ]
+                    }
+                  }
+                },
+                checkOut: {
+                  $dateFromString: {
+                    dateString: {
+                      $concat: [
+                        { $dateToString: { format: "%Y-%m-%d", date: "$eventDate" } },
+                        " ",
+                        "$endTime"
+                      ]
+                    }
+                  }
+                },
+                status: 1,
+                totalAmount: 1,
+                createdBy: 1,
+                createdAt: 1,
+                room: {
+                  roomNumber: "$banquetData.name",
+                  roomTypeId: "banquet"
+                },
+                payment: {
+                  amount: "$payment.amount",
+                  mode: "$payment.mode",
+                  method: "$payment.method",
+                  status: "$payment.status",
+                  createdAt: "$payment.createdAt"
+                }
+              }
+            }
+          ],
+          as: "banquets"
+        }
       }
-    ]);
+    ]
+    );
 
     return {
       status: true,
