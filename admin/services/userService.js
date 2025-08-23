@@ -93,7 +93,7 @@ exports.getUserBookings = async (req) => {
           createdAt: 1,
           room: {
             roomNumber: "$room.roomNumber",
-            roomTypeId: "$room.roomTypeId"
+            roomTypeId: "room"
           },
           payment: {
             amount: "$payment.amount",
